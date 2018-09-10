@@ -19,8 +19,8 @@ test: uninstall install
 	cd tests && nosetests -v --with-coverage --cover-package=vlab_onefs_api
 
 images: build
-	sudo docker build -f ApiDockerfile -t willnx/vlab-onefs-api .
-	sudo docker build -f WorkerDockerfile -t willnx/vlab-onefs-worker .
+	docker build -f ApiDockerfile -t willnx/vlab-onefs-api .
+	docker build -f WorkerDockerfile -t willnx/vlab-onefs-worker .
 
 up:
 	docker-compose -p vlabonefs up --abort-on-container-exit
