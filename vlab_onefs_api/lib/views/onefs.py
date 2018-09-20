@@ -63,7 +63,7 @@ class OneFSView(TaskView):
                      "description": "View available versions of vOneFS that can be created"
                     }
 
-    @requires(verify=False)
+    @requires(verify=False, version=(1,2))
     @describe(post=POST_SCHEMA, delete=DELETE_SCHEMA, get_args=GET_SCHEMA)
     def get(self, *args, **kwargs):
         """Display the vOneFS nodes you own"""
@@ -73,7 +73,7 @@ class OneFSView(TaskView):
         resp['content'] = {'task-id': task.id}
         return ujson.dumps(resp), 200
 
-    @requires(verify=False) # XXX remove verify=False before commit
+    @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
     @validate_input(schema=POST_SCHEMA)
     def post(self, *args, **kwargs):
         """Create a new vOneFS node"""
@@ -88,7 +88,7 @@ class OneFSView(TaskView):
         resp['content'] = {'task-id': task.id}
         return ujson.dumps(resp), 200
 
-    @requires(verify=False) # XXX remove verify=False before commit
+    @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
     @validate_input(schema=DELETE_SCHEMA)
     def delete(self, *args, **kwargs):
         """Destroy a vOneFS node"""
@@ -100,7 +100,7 @@ class OneFSView(TaskView):
         return ujson.dumps(resp), 200
 
     @route('/image', methods=["GET"])
-    @requires(verify=False)
+    @requires(verify=False, version=(1,2))
     @describe(get=IMAGES_SCHEMA)
     def image(self, *args, **kwargs):
         """Show available versions of OneFS that can be deployed"""
