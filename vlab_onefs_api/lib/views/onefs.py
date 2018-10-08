@@ -4,7 +4,7 @@ Defines the RESTful HTTP API for the OneFS service
 """
 import ujson
 from flask import current_app
-from flask_classy import request, route
+from flask_classy import request, route, Response
 from vlab_inf_common.views import TaskView
 from vlab_inf_common.vmware import vCenter, vim
 from vlab_api_common import describe, get_logger, requires, validate_input
@@ -68,36 +68,45 @@ class OneFSView(TaskView):
     def get(self, *args, **kwargs):
         """Display the vOneFS nodes you own"""
         username = kwargs['token']['username']
-        resp = {'user' : username}
+        resp_data = {'user' : username}
         task = current_app.celery_app.send_task('onefs.show', [username])
-        resp['content'] = {'task-id': task.id}
-        return ujson.dumps(resp), 200
+        resp_data['content'] = {'task-id': task.id}
+        resp = Response(ujson.dumps(resp_data))
+        resp.status_code = 202
+        resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
+        return resp
 
     @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
     @validate_input(schema=POST_SCHEMA)
     def post(self, *args, **kwargs):
         """Create a new vOneFS node"""
         username = kwargs['token']['username']
-        resp = {'user' : username}
+        resp_data = {'user' : username}
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
         front_end = body['frontend']
         back_end = body['backend']
         task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end])
-        resp['content'] = {'task-id': task.id}
-        return ujson.dumps(resp), 200
+        resp_data['content'] = {'task-id': task.id}
+        resp = Response(ujson.dumps(resp_data))
+        resp.status_code = 202
+        resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
+        return resp
 
     @requires(verify=False, version=(1,2)) # XXX remove verify=False before commit
     @validate_input(schema=DELETE_SCHEMA)
     def delete(self, *args, **kwargs):
         """Destroy a vOneFS node"""
         username = kwargs['token']['username']
-        resp = {'user' : username}
+        resp_data = {'user' : username}
         machine_name = kwargs['body']['name']
         task = current_app.celery_app.send_task('onefs.delete', [username, machine_name])
-        resp['content'] = {'task-id': task.id}
-        return ujson.dumps(resp), 200
+        resp_data['content'] = {'task-id': task.id}
+        resp = Response(ujson.dumps(resp_data))
+        resp.status_code = 202
+        resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
+        return resp
 
     @route('/image', methods=["GET"])
     @requires(verify=False, version=(1,2))
@@ -105,7 +114,10 @@ class OneFSView(TaskView):
     def image(self, *args, **kwargs):
         """Show available versions of OneFS that can be deployed"""
         username = kwargs['token']['username']
-        resp = {'user' : username}
+        resp_data = {'user' : username}
         task = current_app.celery_app.send_task('onefs.image')
-        resp['content'] = {'task-id': task.id}
-        return ujson.dumps(resp), 200
+        resp_data['content'] = {'task-id': task.id}
+        resp = Response(ujson.dumps(resp_data))
+        resp.status_code = 202
+        resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
+        return resp

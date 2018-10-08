@@ -44,6 +44,16 @@ class TestOneFSView(unittest.TestCase):
 
         self.assertEqual(task_id, expected)
 
+    def test_get_task_link(self):
+        """OneFSView - GET on /api/1/inf/onefs sets the Link header"""
+        resp = self.app.get('/api/1/inf/onefs',
+                            headers={'X-Auth': self.token})
+
+        task_id = resp.headers['Link']
+        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+
+        self.assertEqual(task_id, expected)
+
     def test_post_task(self):
         """OneFSView - POST on /api/1/inf/onefs returns a task-id"""
         resp = self.app.post('/api/1/inf/onefs',
@@ -58,6 +68,20 @@ class TestOneFSView(unittest.TestCase):
 
         self.assertEqual(task_id, expected)
 
+    def test_post_task_link(self):
+        """OneFSView - POST on /api/1/inf/onefs sets the Link header"""
+        resp = self.app.post('/api/1/inf/onefs',
+                             headers={'X-Auth': self.token},
+                             json={'name': "isiO1",
+                                   'image': "8.0.0.4",
+                                   'frontend': "externalNetwork",
+                                   'backend': "internalNetwork"})
+
+        task_id = resp.headers['Link']
+        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+
+        self.assertEqual(task_id, expected)
+
     def test_delete_task(self):
         """OneFSView - DELETE on /api/1/inf/onefs returns a task-id"""
         resp = self.app.delete('/api/1/inf/onefs',
@@ -69,6 +93,17 @@ class TestOneFSView(unittest.TestCase):
 
         self.assertEqual(task_id, expected)
 
+    def test_delete_task_link(self):
+        """OneFSView - DELETE on /api/1/inf/onefs sets the Link header"""
+        resp = self.app.delete('/api/1/inf/onefs',
+                               headers={'X-Auth': self.token},
+                               json={'name': "isi01"})
+
+        task_id = resp.headers['Link']
+        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+
+        self.assertEqual(task_id, expected)
+
     def test_get_image_task(self):
         """OneFSView - GET on /api/1/inf/onefs/image returns a task-id"""
         resp = self.app.get('/api/1/inf/onefs/image',
@@ -76,6 +111,16 @@ class TestOneFSView(unittest.TestCase):
 
         task_id = resp.json['content']['task-id']
         expected = 'asdf-asdf-asdf'
+
+        self.assertEqual(task_id, expected)
+
+    def test_get_image_task_link(self):
+        """OneFSView - GET on /api/1/inf/onefs/image sets the Link header"""
+        resp = self.app.get('/api/1/inf/onefs/image',
+                            headers={'X-Auth': self.token})
+
+        task_id = resp.headers['Link']
+        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
