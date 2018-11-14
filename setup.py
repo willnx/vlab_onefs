@@ -15,5 +15,6 @@ setup(name="vlab-onefs-api",
       package_files={'vlab_onefs_api' : ['app.ini']},
       description="Deploy vOneFS nodes in your vLab",
       install_requires=['flask', 'ldap3', 'pyjwt', 'uwsgi', 'vlab-api-common',
-                        'ujson', 'cryptography', 'vlab-inf-common', 'celery']
+                        'ujson', 'cryptography', 'vlab-inf-common', 'celery',
+                        'selenium']
       )

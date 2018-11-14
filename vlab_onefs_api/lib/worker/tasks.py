@@ -6,7 +6,7 @@ from celery import Celery
 from celery.utils.log import get_task_logger
 
 from vlab_onefs_api.lib import const
-from vlab_onefs_api.lib.worker import vmware
+from vlab_onefs_api.lib.worker import vmware, setup_onefs
 
 app = Celery('onefs', backend='rpc://', broker=const.VLAB_MESSAGE_BROKER)
 logger = get_task_logger(__name__)
@@ -103,5 +103,89 @@ def image():
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     resp['content'] = {'image': vmware.list_images()}
+    logger.info('Task complete')
+    return resp
+
+
+@app.task(name='onefs.config')
+def config(cluster_name, name, username, version, int_netmask, int_ip_low,
+           int_ip_high, ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
+           encoding, sc_zonename, smartconnect_ip, join_cluster):
+    """Turn a blank OneFS node into a usable device
+
+    :Returns: Dictionary
+
+    :param cluster_name: The name of the OneFS cluster
+    :type cluster_name: String
+
+    :param name: The name of the OneFS node
+    :type name: String
+
+    :param int_netmask: The subnet mask for the internal OneFS network
+    :type int_netmask: String
+
+    :param int_ip_low: The smallest IP to assign to an internal NIC
+    :type int_ip_low: String (IPv4 address)
+
+    :param int_ip_high: The largest IP to assign to an internal NIC
+    :type int_ip_high: String (IPv4 address)
+
+    :param ext_ip_low: The smallest IP to assign to an external/public NIC
+    :type ext_ip_low: String (IPv4 address)
+
+    :param ext_ip_high: The largest IP to assign to an external/public NIC
+    :type ext_ip_high: String (IPv4 address)
+
+    :param gateway: The IP address for the default gateway
+    :type gateway: String (IPv4 address)
+
+    :param dns_servers: A common separated list of IPs of the DNS servers to use
+    :type dns_servers: String
+
+    :param encoding: The filesystem encoding to use.
+    :type encoding: String
+
+    :param sc_zonename: The SmartConnect Zone name to use. Skipped if None.
+    :type sc_zonename: String
+
+    :param smartconnect_ip: The IPv4 address to use as the SIP
+    :type smartconnect_ip: String (IPv4 address)
+
+    :param join_cluster: Add the node to an existing cluster
+    :type join_cluster: Boolean
+    """
+    resp = {'content' : {}, 'error': None, 'params': {}}
+    logger.info('Task starting')
+    nodes =  vmware.show_onefs(username)
+    node = nodes.get(name, None)
+    if not node:
+        error = "No node named {} found".format(name)
+        resp['error'] = error
+        logger.error(error)
+        return resp
+    # Lets set it up!
+    logger.info('Found node')
+    console_url = node['console']
+    if join_cluster:
+        logger.info('Joining node to cluster {}'.format(cluster_name))
+        setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+    else:
+        logger.info('Setting up new cluster named {}'.format(cluster_name))
+        setup_onefs.configure_new_cluster(version=version,
+                                          console_url=console_url,
+                                          cluster_name=cluster_name,
+                                          int_netmask=int_netmask,
+                                          int_ip_low=int_ip_low,
+                                          int_ip_high=int_ip_high,
+                                          ext_netmask=ext_netmask,
+                                          ext_ip_low=ext_ip_low,
+                                          ext_ip_high=ext_ip_high,
+                                          gateway=gateway,
+                                          dns_servers=dns_servers,
+                                          encoding=encoding,
+                                          sc_zonename=sc_zonename,
+                                          smartconnect_ip=smartconnect_ip,
+                                          logger=logger)
+
     logger.info('Task complete')
     return resp
