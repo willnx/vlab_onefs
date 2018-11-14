@@ -9,11 +9,12 @@ from setuptools import setup, find_packages
 setup(name="vlab-onefs-api",
       author="Nicholas Willhite,",
       author_email='willnx84@gmail.com',
-      version='2018.07.25',
+      version='2018.11.14',
       packages=find_packages(),
       include_package_data=True,
       package_files={'vlab_onefs_api' : ['app.ini']},
       description="Deploy vOneFS nodes in your vLab",
       install_requires=['flask', 'ldap3', 'pyjwt', 'uwsgi', 'vlab-api-common',
-                        'ujson', 'cryptography', 'vlab-inf-common', 'celery']
+                        'ujson', 'cryptography', 'vlab-inf-common', 'celery',
+                        'selenium']
       )

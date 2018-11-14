@@ -23,6 +23,9 @@ DEFINED = OrderedDict([
             ('VLAB_MESSAGE_BROKER', environ.get('VLAB_MESSAGE_BROKER', 'onefs-broker')),
             ('VLAB_URL', environ.get('VLAB_URL', 'https://localhost')),
             ('VLAB_ONEFS_IMAGES_DIR', environ.get('VLAB_ONEFS_IMAGES_DIR', '/images')),
+            ('INF_VCENTER_READONLY_USER', environ.get('INF_VCENTER_READONLY_USER', 'readonly@vsphere.local')),
+            ('INF_VCENTER_READONLY_PASSWORD', environ.get('INF_VCENTER_READONLY_PASSWORD', 'a')),
+            ('VLAB_VERIFY_TOKEN', environ.get('VLAB_VERIFY_TOKEN', False)),
           ])
 
 Constants = namedtuple('Constants', list(DEFINED.keys()))

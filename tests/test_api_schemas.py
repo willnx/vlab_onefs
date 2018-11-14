@@ -51,6 +51,16 @@ class TestOneFSViewSchema(unittest.TestCase):
 
         self.assertTrue(schema_valid)
 
+    def test_config_schema(self):
+        """The schema defined for POST on /config is valid"""
+        try:
+            Draft4Validator.check_schema(onefs.OneFSView.CONFIG_SCHEMA)
+            schema_valid = True
+        except RuntimeError:
+            schema_valid = False
+
+        self.assertTrue(schema_valid)
+
     def test_delete(self):
         """The DELETE schema happy path test"""
         body = {'name': "isi01"}
@@ -133,6 +143,70 @@ class TestOneFSViewSchema(unittest.TestCase):
                  'image': "8.0.0.4"}
         try:
             validate(body, onefs.OneFSView.POST_SCHEMA)
+            ok = False
+        except ValidationError:
+            ok = True
+
+        self.assertTrue(ok)
+
+    def test_config_join(self):
+        """The schema for /config supports joining a node to a cluster"""
+        body = {'name': 'woot-2',
+                'cluster_name': 'woot',
+                'join': True}
+        try:
+            validate(body, onefs.OneFSView.CONFIG_SCHEMA)
+            ok = True
+        except ValidationError:
+            ok = False
+
+        self.assertTrue(ok)
+
+    def test_config_new(self):
+        """The schema for /config supports creating a new cluster"""
+        body = {'cluster_name': "woot",
+                'version': "8.0.1.2",
+                'name': 'woot-1',
+                'int_netmask': '255.255.255.0',
+                'int_ip_low': '200.1.1.1',
+                'int_ip_high': '200.1.1.10',
+                'ext_netmask': '255.255.255.0',
+                'ext_ip_low': '10.7.1.2',
+                'ext_ip_high': '10.7.1.10',
+                'gateway': '10.7.1.1',
+                'encoding': "utf-8",
+                'sc_zonename': 'woot.vlab.local',
+                'smartconnect_ip': '10.7.1.11',
+                'dns_servers': ['1.1.1.1', '8.8.8.8']
+               }
+        try:
+            validate(body, onefs.OneFSView.CONFIG_SCHEMA)
+            ok = True
+        except ValidationError:
+            ok = False
+
+        self.assertTrue(ok)
+
+    def test_config_join_mutext(self):
+        """The supplying 'join' when creating a new cluster is invalid on /config """
+        body = {'cluster_name': "woot",
+                'version': "8.0.1.2",
+                'name': 'woot-1',
+                'int_netmask': '255.255.255.0',
+                'int_ip_low': '200.1.1.1',
+                'int_ip_high': '200.1.1.10',
+                'ext_netmask': '255.255.255.0',
+                'ext_ip_low': '10.7.1.2',
+                'ext_ip_high': '10.7.1.10',
+                'gateway': '10.7.1.1',
+                'encoding': "utf-8",
+                'sc_zonename': 'woot.vlab.local',
+                'smartconnect_ip': '10.7.1.11',
+                'dns_servers': ['1.1.1.1', '8.8.8.8'],
+                'join' : True,
+               }
+        try:
+            validate(body, onefs.OneFSView.CONFIG_SCHEMA)
             ok = False
         except ValidationError:
             ok = True

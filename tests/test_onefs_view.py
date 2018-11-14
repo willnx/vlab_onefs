@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 import ujson
 from flask import Flask
 from vlab_api_common import flask_common
-from vlab_api_common.http_auth import generate_test_token
+from vlab_api_common.http_auth import generate_v2_test_token
 
 
 from vlab_onefs_api.lib.views import onefs
@@ -19,7 +19,7 @@ class TestOneFSView(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Runs once for the whole test suite"""
-        cls.token = generate_test_token(username='bob')
+        cls.token = generate_v2_test_token(username='bob')
 
     @classmethod
     def setUp(cls):
@@ -123,6 +123,54 @@ class TestOneFSView(unittest.TestCase):
         expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
+
+    def test_post_config_ok(self):
+        """OneFSView - POST on /api/1/inf/onefs/config returns 202 upon success"""
+        payload = {"cluster_name": "mycluster",
+                   "name": "mycluster-1",
+                   "version": "8.0.0.4",
+                   "int_netmask": "255.255.255.0",
+                   "int_ip_low": "4.4.4.4",
+                   "int_ip_high": "4.4.4.40",
+                   "ext_netmask": "255.255.255.0",
+                   "ext_ip_low": "10.1.1.2",
+                   "ext_ip_high": "10.1.1.20",
+                   "smartconnect_ip": "10.1.1.21",
+                   "gateway": "10.1.1.1",
+                   "encoding": "utf-8",
+                   "sc_zonename": "myzone.foo.com",
+                   "dns_servers": ['1.1.1.1', '8.8.8.8']
+                  }
+        resp = self.app.post('/api/1/inf/onefs/config',
+                             json=payload,
+                             headers={'X-Auth': self.token})
+        expected = 202
+
+        self.assertEqual(resp.status_code, expected)
+
+    def test_post_config_bad_input(self):
+        """OneFSView - POST on /api/1/inf/onefs/config returns 400 when supplied with bad input"""
+        payload = {"cluster_name": "mycluster",
+                   "name": "mycluster-1",
+                   "version": "8.0.0.4",
+                   "int_netmask": "255.255.255.0",
+                   "int_ip_low": "4.4.4.4",
+                   "int_ip_high": "4.4.4.40",
+                   "ext_netmask": "255.255.255.0",
+                   "ext_ip_low": "10.100.1.2",
+                   "ext_ip_high": "10.1.1.20",
+                   "smartconnect_ip": "10.1.1.21",
+                   "gateway": "10.1.1.1",
+                   "encoding": "utf-8",
+                   "sc_zonename": "myzone.foobar.com",
+                   "dns_servers": ['1.1.1.1', '8.8.8.8']
+                  }
+        resp = self.app.post('/api/1/inf/onefs/config',
+                             json=payload,
+                             headers={'X-Auth': self.token})
+        expected = 400
+
+        self.assertEqual(resp.status_code, expected)
 
 
 if __name__ == '__main__':

@@ -27,7 +27,6 @@ def show_onefs(username):
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         onefs_vms = {}
         for vm in folder.childEntity:
-            logger.info(vm.name)
             info = virtual_machine.get_info(vcenter, vm)
             kind, version = info['note'].split('=')
             if kind == 'OneFS':
