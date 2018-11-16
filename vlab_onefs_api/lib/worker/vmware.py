@@ -86,7 +86,11 @@ def create_onefs(username, machine_name, image, front_end, back_end):
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         ova_name = convert_name(image)
-        ova = Ova(os.path.join(const.VLAB_ONEFS_IMAGES_DIR, ova_name))
+        try:
+            ova = Ova(os.path.join(const.VLAB_ONEFS_IMAGES_DIR, ova_name))
+        except FileNotFoundError:
+            error = 'Invalid version of OneFS: {}'.format(convert_name(image, to_version=True))
+            raise ValueError(error)
         try:
             network_map = make_network_map(vcenter.networks, front_end, back_end)
             the_vm = virtual_machine.deploy_from_ova(vcenter=vcenter,
