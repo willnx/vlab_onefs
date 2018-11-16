@@ -147,7 +147,7 @@ class OneFSView(TaskView):
                          "not": {"required": ["ext_ip_high", "ext_ip_low", "ext_netmask",
                                               "int_ip_high", "int_ip_low", "int_netmask",
                                               "dns_servers", "sc_zonename", "smartconnect_ip",
-                                              "encoding", "version"
+                                              "encoding", "version", "gateway"
                                               ]
                                 }
                         },
@@ -155,6 +155,7 @@ class OneFSView(TaskView):
                                       "ext_ip_high","ext_ip_low", "ext_netmask",
                                       "int_ip_high", "int_ip_low", "int_netmask",
                                       "dns_servers", "sc_zonename", "smartconnect_ip",
+                                      "gateway"
                                       ],
                          "not": {"required": ["join"]}
                         }
