@@ -23,10 +23,18 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'worked': True, 'note': "OneFS=8.0.0.4"}
+        fake_get_info.return_value =  {'component': 'OneFS',
+                                       'created': 1234,
+                                       'version': '8.0.0.4',
+                                       'configured': False,
+                                       'generation': 1}
 
         output = vmware.show_onefs(username='alice')
-        expected = {'isi01': {'worked': True, 'note': "OneFS=8.0.0.4"}}
+        expected = {'isi01': {'component': 'OneFS',
+                              'created': 1234,
+                              'version': '8.0.0.4',
+                              'configured': False,
+                              'generation': 1}}
 
         self.assertEqual(output, expected)
 
@@ -39,20 +47,24 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'worked': True, 'note': "noIIQ=8.0.0.4"}
+        fake_get_info.return_value = {'component': 'somethingElse',
+                                       'created': 1234,
+                                       'version': '8.0.0.4',
+                                       'configured': False,
+                                       'generation': 1}
 
         output = vmware.show_onefs(username='alice')
         expected = {}
 
         self.assertEqual(output, expected)
 
+    @patch.object(vmware.virtual_machine, 'consume_task')
     @patch.object(vmware, 'make_network_map')
-    @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'Ova')
     @patch.object(vmware.virtual_machine, 'get_info')
     @patch.object(vmware.virtual_machine, 'deploy_from_ova')
     @patch.object(vmware, 'vCenter')
-    def test_create_onefs(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_consume_task, make_network_map):
+    def test_create_onefs(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task):
         """``create_onefs`` returns the new onefs's info when everything works"""
         fake_Ova.return_value.networks = ['vLabNetwork']
         fake_get_info.return_value = {'worked' : True}
@@ -103,6 +115,24 @@ class TestVMware(unittest.TestCase):
                                     front_end='externallNetwork',
                                     back_end='not a thing')
 
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'Ova')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware.virtual_machine, 'deploy_from_ova')
+    @patch.object(vmware, 'vCenter')
+    def test_create_onefs_bad_image(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_consume_task):
+        """``create_onefs`` raises ValueError if supplied with a non-existing image of OneFS"""
+        fake_Ova.side_effect = FileNotFoundError("testing")
+        fake_get_info.return_value = {'worked' : True}
+        fake_vCenter.return_value.__enter__.return_value.networks = {'externallNetwork': vmware.vim.Network(moId='asdf')}
+
+        with self.assertRaises(ValueError):
+            vmware.create_onefs(username='alice',
+                                    machine_name='isi01',
+                                    image='4.0.0.0',
+                                    front_end='externallNetwork',
+                                    back_end='internalNetwork')
+
     @patch.object(vmware.virtual_machine, 'get_info')
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware.virtual_machine, 'power')
@@ -114,7 +144,11 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'worked': True, 'note': "OneFS=8.0.0.4"}
+        fake_get_info.return_value = {'component': 'OneFS',
+                                      'created': 1234,
+                                      'version': '8.0.0.4',
+                                      'configured': False,
+                                      'generation': 1}
         vmware.delete_onefs(username='alice', machine_name='isi01')
 
         self.assertTrue(fake_power.called)
@@ -171,6 +205,21 @@ class TestVMware(unittest.TestCase):
                                          back_end='intNetwork')
 
         self.assertTrue(isinstance(result, list))
+
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'vCenter')
+    def test_update_meta(self, fake_vCenter, fake_set_meta):
+        """``update_meta`` connets to vSphere and sets the meta data on a supplied VM"""
+        fake_vm = MagicMock()
+        fake_vm.name = 'isi01'
+        fake_folder = MagicMock()
+        fake_folder.childEntity = [fake_vm]
+        fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
+
+        vmware.update_meta(username='jill', vm_name='isi01', new_meta={'worked': True})
+
+        self.assertTrue(fake_set_meta.called)
+
 
 
 if __name__ == '__main__':

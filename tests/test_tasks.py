@@ -92,7 +92,8 @@ class TestTasks(unittest.TestCase):
     @patch.object(tasks, 'setup_onefs')
     def test_config(self, fake_setup_onefs, fake_vmware):
         """``config`` returns a dictionary upon success"""
-        fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com'}}
+        fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
+                                                                'info': {'configured': False}}}
 
         output = tasks.config(cluster_name='mycluster',
                               name='mycluster-1',
@@ -118,7 +119,8 @@ class TestTasks(unittest.TestCase):
     @patch.object(tasks, 'setup_onefs')
     def test_config_join(self, fake_setup_onefs, fake_vmware):
         """``config`` returns a dictionary upon joining a node to an existing cluster"""
-        fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com'}}
+        fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
+                                                                'info': {'configured': False}}}
 
         output = tasks.config(cluster_name='mycluster',
                               name='mycluster-1',
@@ -166,11 +168,33 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
+    @patch.object(tasks, 'vmware')
+    @patch.object(tasks, 'setup_onefs')
+    def test_config_already_configed(self, fake_setup_onefs, fake_vmware):
+        """``config`` returns an error if the node is already configured"""
+        fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
+                                                                'info': {'configured': True}}}
 
 
+        output = tasks.config(cluster_name='mycluster',
+                              name='mycluster-1',
+                              username='bob',
+                              version='8.1.1.0',
+                              int_netmask='255.255.255.0',
+                              int_ip_low='5.5.5.1',
+                              int_ip_high='5.5.5.10',
+                              ext_netmask='255.255.255.0',
+                              ext_ip_low='10.1.1.2',
+                              ext_ip_high='10.1.1.20',
+                              gateway='10.1.1.1',
+                              dns_servers='1.1.1.1,8.8.8.8',
+                              encoding='utf-8',
+                              sc_zonename='myzone.foo.com',
+                              smartconnect_ip='10.1.1.21',
+                              join_cluster=False)
+        expected = {'content': {}, 'error': "Cannot configure a node that's already configured", 'params': {}}
 
-
-
+        self.assertEqual(output, expected)
 
 
 if __name__ == '__main__':

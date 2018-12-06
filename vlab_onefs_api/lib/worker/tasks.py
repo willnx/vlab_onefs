@@ -163,29 +163,35 @@ def config(cluster_name, name, username, version, int_netmask, int_ip_low,
         resp['error'] = error
         logger.error(error)
         return resp
-    # Lets set it up!
-    logger.info('Found node')
-    console_url = node['console']
-    if join_cluster:
-        logger.info('Joining node to cluster {}'.format(cluster_name))
-        setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+    elif node['info']['configured']:
+        error = "Cannot configure a node that's already configured"
+        resp['error'] = error
+        logger.error(error)
     else:
-        logger.info('Setting up new cluster named {}'.format(cluster_name))
-        setup_onefs.configure_new_cluster(version=version,
-                                          console_url=console_url,
-                                          cluster_name=cluster_name,
-                                          int_netmask=int_netmask,
-                                          int_ip_low=int_ip_low,
-                                          int_ip_high=int_ip_high,
-                                          ext_netmask=ext_netmask,
-                                          ext_ip_low=ext_ip_low,
-                                          ext_ip_high=ext_ip_high,
-                                          gateway=gateway,
-                                          dns_servers=dns_servers,
-                                          encoding=encoding,
-                                          sc_zonename=sc_zonename,
-                                          smartconnect_ip=smartconnect_ip,
-                                          logger=logger)
-
+        # Lets set it up!
+        logger.info('Found node')
+        console_url = node['console']
+        if join_cluster:
+            logger.info('Joining node to cluster {}'.format(cluster_name))
+            setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+        else:
+            logger.info('Setting up new cluster named {}'.format(cluster_name))
+            setup_onefs.configure_new_cluster(version=version,
+                                              console_url=console_url,
+                                              cluster_name=cluster_name,
+                                              int_netmask=int_netmask,
+                                              int_ip_low=int_ip_low,
+                                              int_ip_high=int_ip_high,
+                                              ext_netmask=ext_netmask,
+                                              ext_ip_low=ext_ip_low,
+                                              ext_ip_high=ext_ip_high,
+                                              gateway=gateway,
+                                              dns_servers=dns_servers,
+                                              encoding=encoding,
+                                              sc_zonename=sc_zonename,
+                                              smartconnect_ip=smartconnect_ip,
+                                              logger=logger)
+    node['info']['configured'] = True
+    vmware.update_meta(username, name, node['info'])
     logger.info('Task complete')
     return resp
