@@ -3,14 +3,11 @@
 import time
 import random
 import os.path
-from celery.utils.log import get_task_logger
 from vlab_inf_common.vmware import vCenter, Ova, vim, virtual_machine, consume_task
 
+import ujson
+
 from vlab_onefs_api.lib import const
-
-
-logger = get_task_logger(__name__)
-logger.setLevel(const.VLAB_ONEFS_LOG_LEVEL.upper())
 
 
 def show_onefs(username):
@@ -21,29 +18,30 @@ def show_onefs(username):
     :param username: The user requesting info about their onefs
     :type username: String
     """
-    info = {}
+    onefs_vms = {}
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
-        onefs_vms = {}
         for vm in folder.childEntity:
             info = virtual_machine.get_info(vcenter, vm)
-            kind, version = info['note'].split('=')
-            if kind == 'OneFS':
+            if info['component'] == 'OneFS':
                 onefs_vms[vm.name] = info
     return onefs_vms
 
 
-def delete_onefs(username, machine_name):
+def delete_onefs(username, machine_name, logger):
     """Unregister and destroy a user's onefs node
 
     :Returns: None
 
-    :param username: The user who wants to delete their jumpbox
+    :param username: The user who wants to delete their OneFS node
     :type username: String
 
     :param machine_name: The name of the VM to delete
     :type machine_name: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
@@ -51,8 +49,7 @@ def delete_onefs(username, machine_name):
         for entity in folder.childEntity:
             if entity.name == machine_name:
                 info = virtual_machine.get_info(vcenter, entity)
-                kind, version = info['note'].split('=')
-                if kind == 'OneFS':
+                if info['component'] == 'OneFS':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
                     delete_task = entity.Destroy_Task()
@@ -63,12 +60,12 @@ def delete_onefs(username, machine_name):
             raise ValueError('No OneFS node named {} found'.format(machine_name))
 
 
-def create_onefs(username, machine_name, image, front_end, back_end):
+def create_onefs(username, machine_name, image, front_end, back_end, logger):
     """Deploy a OneFS node
 
     :Returns: Dictionary
 
-    :param username: The user who wants to delete their jumpbox
+    :param username: The user who wants to delete a OneFS node
     :type username: String
 
     :param machine_name: The name of the OneFS node
@@ -82,11 +79,18 @@ def create_onefs(username, machine_name, image, front_end, back_end):
 
     :param back_end: The network to hook the internal network to
     :type back_end: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         ova_name = convert_name(image)
-        ova = Ova(os.path.join(const.VLAB_ONEFS_IMAGES_DIR, ova_name))
+        try:
+            ova = Ova(os.path.join(const.VLAB_ONEFS_IMAGES_DIR, ova_name))
+        except FileNotFoundError:
+            error = 'Invalid version of OneFS: {}'.format(image)
+            raise ValueError(error)
         try:
             network_map = make_network_map(vcenter.networks, front_end, back_end)
             the_vm = virtual_machine.deploy_from_ova(vcenter=vcenter,
@@ -97,12 +101,37 @@ def create_onefs(username, machine_name, image, front_end, back_end):
                                                      logger=logger)
         finally:
             ova.close()
-        spec = vim.vm.ConfigSpec()
-        spec.annotation = 'OneFS={}'.format(image)
-        task = the_vm.ReconfigVM_Task(spec)
-        consume_task(task)
+        meta_data = {'component': 'OneFS',
+                     'created': time.time(),
+                     'version': image,
+                     'configured': False,
+                     'generation': 1} # Versioning of the VM itself
+        virtual_machine.set_meta(the_vm, meta_data)
         info = virtual_machine.get_info(vcenter, the_vm)
         return {the_vm.name: info}
+
+
+def update_meta(username, vm_name, new_meta):
+    """Connect to vSphere and update the VM meta data
+
+    :Returns: None
+
+    :param username: The user who owns the OneFS node
+    :type username: String
+
+    :param vm_name: The name of the VM to update the meta data on
+    :type vm_name: String
+
+    :param new_meta: The new meta data to overwrite the old meta data with
+    :type new_meta: Dictionary
+    """
+    with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
+                 password=const.INF_VCENTER_PASSWORD) as vcenter:
+        folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
+        for vm in folder.childEntity:
+            if vm.name == vm_name:
+                virtual_machine.set_meta(vm, new_meta)
+
 
 def list_images():
     """Obtain a list of available version of OneFS nodes that can be created

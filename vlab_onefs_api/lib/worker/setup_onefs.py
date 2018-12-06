@@ -69,10 +69,10 @@ class vSphereConsole(object):
         :type auto_enter: Boolean
         """
         self._console.send_keys(*args)
-        time.sleep(0.5) # Give the HTML console time to react to input
+        time.sleep(1) # Give the HTML console time to react to input
         if auto_enter:
             self._console.send_keys(Keys.ENTER)
-            time.sleep(0.5)
+            time.sleep(1)
 
 
 def join_existing_cluster(console_url, cluster_name, logger):

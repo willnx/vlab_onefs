@@ -3,25 +3,27 @@
 Entry point logic for available backend worker tasks
 """
 from celery import Celery
-from celery.utils.log import get_task_logger
+from vlab_api_common import get_task_logger
 
 from vlab_onefs_api.lib import const
 from vlab_onefs_api.lib.worker import vmware, setup_onefs
 
 app = Celery('onefs', backend='rpc://', broker=const.VLAB_MESSAGE_BROKER)
-logger = get_task_logger(__name__)
-logger.setLevel(const.VLAB_ONEFS_LOG_LEVEL.upper())
 
 
-@app.task(name='onefs.show')
-def show(username):
+@app.task(name='onefs.show', bind=True)
+def show(self, username, txn_id):
     """Obtain basic information about onefs
 
     :Returns: Dictionary
 
     :param username: The name of the user who wants info about their default gateway
     :type username: String
+
+    :param txn_id: A unique string supplied by the client to track the call through logs
+    :type txn_id: String
     """
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
@@ -35,9 +37,9 @@ def show(username):
     return resp
 
 
-@app.task(name='onefs.create')
-def create(username, machine_name, image, front_end, back_end):
-    """TODO
+@app.task(name='onefs.create', bind=True)
+def create(self, username, machine_name, image, front_end, back_end, txn_id):
+    """Deploy a new OneFS node
 
     :Returns: Dictionary
 
@@ -55,7 +57,11 @@ def create(username, machine_name, image, front_end, back_end):
 
     :param back_end: The network to hook the internal network to
     :type back_end: String
+
+    :param txn_id: A unique string supplied by the client to track the call through logs
+    :type txn_id: String
     """
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
@@ -67,9 +73,9 @@ def create(username, machine_name, image, front_end, back_end):
     return resp
 
 
-@app.task(name='onefs.delete')
-def delete(username, machine_name):
-    """TODO
+@app.task(name='onefs.delete', bind=True)
+def delete(self, username, machine_name, txn_id):
+    """Destroy a OneFS node
 
     :Returns: Dictionary
 
@@ -78,7 +84,11 @@ def delete(username, machine_name):
 
     :param machine_name: The name of the instance of onefs
     :type machine_name: String
+
+    :param txn_id: A unique string supplied by the client to track the call through logs
+    :type txn_id: String
     """
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
@@ -91,15 +101,19 @@ def delete(username, machine_name):
     return resp
 
 
-@app.task(name='onefs.image')
-def image():
-    """TODO
+@app.task(name='onefs.image', bind=True)
+def image(self, txn_id):
+    """Obtain the available OneFS images/versions that can be deployed
 
     :Returns: Dictionary
 
     :param username: The name of the user who wants to create a new default gateway
     :type username: String
+
+    :param txn_id: A unique string supplied by the client to track the call through logs
+    :type txn_id: String
     """
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     resp['content'] = {'image': vmware.list_images()}
@@ -107,10 +121,10 @@ def image():
     return resp
 
 
-@app.task(name='onefs.config')
-def config(cluster_name, name, username, version, int_netmask, int_ip_low,
+@app.task(name='onefs.config', bind=True)
+def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
            int_ip_high, ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-           encoding, sc_zonename, smartconnect_ip, join_cluster):
+           encoding, sc_zonename, smartconnect_ip, join_cluster, txn_id):
     """Turn a blank OneFS node into a usable device
 
     :Returns: Dictionary
@@ -153,7 +167,11 @@ def config(cluster_name, name, username, version, int_netmask, int_ip_low,
 
     :param join_cluster: Add the node to an existing cluster
     :type join_cluster: Boolean
+
+    :param txn_id: A unique string supplied by the client to track the call through logs
+    :type txn_id: String
     """
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     nodes =  vmware.show_onefs(username)
@@ -163,29 +181,35 @@ def config(cluster_name, name, username, version, int_netmask, int_ip_low,
         resp['error'] = error
         logger.error(error)
         return resp
-    # Lets set it up!
-    logger.info('Found node')
-    console_url = node['console']
-    if join_cluster:
-        logger.info('Joining node to cluster {}'.format(cluster_name))
-        setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+    elif node['info']['configured']:
+        error = "Cannot configure a node that's already configured"
+        resp['error'] = error
+        logger.error(error)
     else:
-        logger.info('Setting up new cluster named {}'.format(cluster_name))
-        setup_onefs.configure_new_cluster(version=version,
-                                          console_url=console_url,
-                                          cluster_name=cluster_name,
-                                          int_netmask=int_netmask,
-                                          int_ip_low=int_ip_low,
-                                          int_ip_high=int_ip_high,
-                                          ext_netmask=ext_netmask,
-                                          ext_ip_low=ext_ip_low,
-                                          ext_ip_high=ext_ip_high,
-                                          gateway=gateway,
-                                          dns_servers=dns_servers,
-                                          encoding=encoding,
-                                          sc_zonename=sc_zonename,
-                                          smartconnect_ip=smartconnect_ip,
-                                          logger=logger)
-
+        # Lets set it up!
+        logger.info('Found node')
+        console_url = node['console']
+        if join_cluster:
+            logger.info('Joining node to cluster {}'.format(cluster_name))
+            setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+        else:
+            logger.info('Setting up new cluster named {}'.format(cluster_name))
+            setup_onefs.configure_new_cluster(version=version,
+                                              console_url=console_url,
+                                              cluster_name=cluster_name,
+                                              int_netmask=int_netmask,
+                                              int_ip_low=int_ip_low,
+                                              int_ip_high=int_ip_high,
+                                              ext_netmask=ext_netmask,
+                                              ext_ip_low=ext_ip_low,
+                                              ext_ip_high=ext_ip_high,
+                                              gateway=gateway,
+                                              dns_servers=dns_servers,
+                                              encoding=encoding,
+                                              sc_zonename=sc_zonename,
+                                              smartconnect_ip=smartconnect_ip,
+                                              logger=logger)
+    node['info']['configured'] = True
+    vmware.update_meta(username, name, node['info'])
     logger.info('Task complete')
     return resp
