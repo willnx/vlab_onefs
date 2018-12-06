@@ -22,7 +22,7 @@ logger = get_logger(__name__, loglevel=const.VLAB_ONEFS_LOG_LEVEL)
 
 
 class OneFSView(TaskView):
-    """API end point TODO"""
+    """API end point for working with OneFS nodes"""
     route_base = '/api/1/inf/onefs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
@@ -162,7 +162,7 @@ class OneFSView(TaskView):
                      ]
                     }
 
-    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @describe(post=POST_SCHEMA, delete=DELETE_SCHEMA, get_args=GET_SCHEMA)
     def get(self, *args, **kwargs):
         """Display the vOneFS nodes you own"""
@@ -175,7 +175,7 @@ class OneFSView(TaskView):
         resp.headers.add('Link', '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id))
         return resp
 
-    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2)) # XXX remove verify=False before commit
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @validate_input(schema=POST_SCHEMA)
     def post(self, *args, **kwargs):
         """Create a new vOneFS node"""
@@ -194,7 +194,7 @@ class OneFSView(TaskView):
         resp.headers.add('Link', '<{0}{1}/config>; rel=config>'.format(const.VLAB_URL, self.route_base))
         return resp
 
-    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2)) # XXX remove verify=False before commit
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @validate_input(schema=DELETE_SCHEMA)
     def delete(self, *args, **kwargs):
         """Destroy a vOneFS node"""
@@ -209,7 +209,7 @@ class OneFSView(TaskView):
         return resp
 
     @route('/image', methods=["GET"])
-    @requires(verify=const.VLAB_VERIFY_TOKEN, version=(1,2))
+    @requires(verify=const.VLAB_VERIFY_TOKEN, version=2)
     @describe(get=IMAGES_SCHEMA)
     def image(self, *args, **kwargs):
         """Show available versions of OneFS that can be deployed"""
