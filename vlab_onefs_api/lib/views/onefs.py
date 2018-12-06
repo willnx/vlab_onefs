@@ -167,8 +167,9 @@ class OneFSView(TaskView):
     def get(self, *args, **kwargs):
         """Display the vOneFS nodes you own"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
-        task = current_app.celery_app.send_task('onefs.show', [username])
+        task = current_app.celery_app.send_task('onefs.show', [username, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -180,13 +181,14 @@ class OneFSView(TaskView):
     def post(self, *args, **kwargs):
         """Create a new vOneFS node"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
         front_end = body['frontend']
         back_end = body['backend']
-        task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end])
+        task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -199,9 +201,10 @@ class OneFSView(TaskView):
     def delete(self, *args, **kwargs):
         """Destroy a vOneFS node"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         machine_name = kwargs['body']['name']
-        task = current_app.celery_app.send_task('onefs.delete', [username, machine_name])
+        task = current_app.celery_app.send_task('onefs.delete', [username, machine_name, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -214,8 +217,9 @@ class OneFSView(TaskView):
     def image(self, *args, **kwargs):
         """Show available versions of OneFS that can be deployed"""
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
-        task = current_app.celery_app.send_task('onefs.image')
+        task = current_app.celery_app.send_task('onefs.image', [txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
@@ -230,6 +234,7 @@ class OneFSView(TaskView):
         """Set the configuration of a OneFS node"""
         status_code = 202
         username = kwargs['token']['username']
+        txn_id = request.headers.get('X-REQUEST-ID', 'noId')
         resp_data = {'user' : username}
         # Aligning these just makes it easier to read
         cluster_name    = kwargs['body']['cluster_name']
@@ -280,7 +285,8 @@ class OneFSView(TaskView):
                                                                             'encoding' : encoding,
                                                                             'sc_zonename' : sc_zonename,
                                                                             'smartconnect_ip' : smartconnect_ip,
-                                                                            'join_cluster' : join_cluster})
+                                                                            'join_cluster' : join_cluster,
+                                                                            'txn_id' : txn_id})
 
             resp_data['content'] = {'task-id': task.id}
             link = '<{0}{1}/task/{2}>; rel=status'.format(const.VLAB_URL, self.route_base, task.id)

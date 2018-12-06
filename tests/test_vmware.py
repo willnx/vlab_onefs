@@ -66,6 +66,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_create_onefs(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task):
         """``create_onefs`` returns the new onefs's info when everything works"""
+        fake_logger = MagicMock()
         fake_Ova.return_value.networks = ['vLabNetwork']
         fake_get_info.return_value = {'worked' : True}
         fake_deploy_from_ova.return_value.name = 'isi01'
@@ -74,7 +75,8 @@ class TestVMware(unittest.TestCase):
                                      machine_name='isi01',
                                      image='8.0.0.4',
                                      front_end='externalNetwork',
-                                     back_end='internalNetwork')
+                                     back_end='internalNetwork',
+                                     logger=fake_logger)
         expected = {'isi01': {'worked': True}}
 
         self.assertEqual(output, expected)
@@ -86,6 +88,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_create_onefs_value_error(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_consume_task):
         """``create_onefs`` raises ValueError if supplied with a non-existing front_end network"""
+        fake_logger = MagicMock()
         fake_Ova.return_value.networks = ['vLabNetwork']
         fake_get_info.return_value = {'worked' : True}
         fake_vCenter.return_value.__enter__.return_value.networks = {'internalNetwork': vmware.vim.Network(moId='asdf')}
@@ -95,7 +98,8 @@ class TestVMware(unittest.TestCase):
                                     machine_name='isi01',
                                     image='8.0.0.4',
                                     front_end='not a thing',
-                                    back_end='internalNetwork')
+                                    back_end='internalNetwork',
+                                    logger=fake_logger)
 
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'Ova')
@@ -104,6 +108,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_create_onefs_value_error_2(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_consume_task):
         """``create_onefs`` raises ValueError if supplied with a non-existing back_end network"""
+        fake_logger = MagicMock()
         fake_Ova.return_value.networks = ['vLabNetwork']
         fake_get_info.return_value = {'worked' : True}
         fake_vCenter.return_value.__enter__.return_value.networks = {'externallNetwork': vmware.vim.Network(moId='asdf')}
@@ -113,7 +118,8 @@ class TestVMware(unittest.TestCase):
                                     machine_name='isi01',
                                     image='8.0.0.4',
                                     front_end='externallNetwork',
-                                    back_end='not a thing')
+                                    back_end='not a thing',
+                                    logger=fake_logger)
 
     @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'Ova')
@@ -122,16 +128,18 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_create_onefs_bad_image(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, fake_consume_task):
         """``create_onefs`` raises ValueError if supplied with a non-existing image of OneFS"""
+        fake_logger = MagicMock()
         fake_Ova.side_effect = FileNotFoundError("testing")
         fake_get_info.return_value = {'worked' : True}
         fake_vCenter.return_value.__enter__.return_value.networks = {'externallNetwork': vmware.vim.Network(moId='asdf')}
 
         with self.assertRaises(ValueError):
             vmware.create_onefs(username='alice',
-                                    machine_name='isi01',
-                                    image='4.0.0.0',
-                                    front_end='externallNetwork',
-                                    back_end='internalNetwork')
+                                machine_name='isi01',
+                                image='4.0.0.0',
+                                front_end='externallNetwork',
+                                back_end='internalNetwork',
+                                logger=fake_logger)
 
     @patch.object(vmware.virtual_machine, 'get_info')
     @patch.object(vmware, 'consume_task')
@@ -139,6 +147,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_delete_onefs(self, fake_vCenter, fake_power, fake_consume_task, fake_get_info):
         """``delete_onefs`` powers off the VM then deletes it"""
+        fake_logger = MagicMock()
         fake_vm = MagicMock()
         fake_vm.name = 'isi01'
         fake_folder = MagicMock()
@@ -149,7 +158,7 @@ class TestVMware(unittest.TestCase):
                                       'version': '8.0.0.4',
                                       'configured': False,
                                       'generation': 1}
-        vmware.delete_onefs(username='alice', machine_name='isi01')
+        vmware.delete_onefs(username='alice', machine_name='isi01', logger=fake_logger)
 
         self.assertTrue(fake_power.called)
         self.assertTrue(fake_vm.Destroy_Task.called)
@@ -160,6 +169,7 @@ class TestVMware(unittest.TestCase):
     @patch.object(vmware, 'vCenter')
     def test_delete_onefs_value_error(self, fake_vCenter, fake_power, fake_consume_task, fake_get_info):
         """``delete_onefs`` raises ValueError if no onefs machine has the supplied name"""
+        fake_logger = MagicMock()
         fake_vm = MagicMock()
         fake_vm.name = 'isi01'
         fake_folder = MagicMock()
@@ -168,7 +178,7 @@ class TestVMware(unittest.TestCase):
         fake_get_info.return_value = {'worked': True, 'note': "OneFS=8.0.0.4"}
 
         with self.assertRaises(ValueError):
-            vmware.delete_onefs(username='alice', machine_name='not a thing')
+            vmware.delete_onefs(username='alice', machine_name='not a thing', logger=fake_logger)
 
     @patch.object(vmware.os, 'listdir')
     def test_list_images(self, fake_listdir):

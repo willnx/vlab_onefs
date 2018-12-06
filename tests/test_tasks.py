@@ -15,7 +15,7 @@ class TestTasks(unittest.TestCase):
         """``show`` returns a dictionary when everything works as expected"""
         fake_vmware.show_onefs.return_value = {'worked': True}
 
-        output = tasks.show(username='bob')
+        output = tasks.show(username='bob', txn_id='myId')
         expected = {'content' : {'worked': True}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -25,7 +25,7 @@ class TestTasks(unittest.TestCase):
         """``show`` sets the error in the dictionary to the ValueError message"""
         fake_vmware.show_onefs.side_effect = [ValueError("testing")]
 
-        output = tasks.show(username='bob')
+        output = tasks.show(username='bob', txn_id='myId')
         expected = {'content' : {}, 'error': 'testing', 'params': {}}
 
         self.assertEqual(output, expected)
@@ -39,7 +39,8 @@ class TestTasks(unittest.TestCase):
                               machine_name='isi01',
                               image='8.0.04',
                               front_end='externalNetwork',
-                              back_end='internalNetwork')
+                              back_end='internalNetwork',
+                              txn_id='myId')
         expected = {'content' : {'worked': True}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -53,7 +54,8 @@ class TestTasks(unittest.TestCase):
                               machine_name='isi01',
                               image='8.0.04',
                               front_end='externalNetwork',
-                              back_end='internalNetwork')
+                              back_end='internalNetwork',
+                              txn_id='myId')
         expected = {'content' : {}, 'error': 'testing', 'params': {}}
 
         self.assertEqual(output, expected)
@@ -63,7 +65,7 @@ class TestTasks(unittest.TestCase):
         """``delete`` returns a dictionary when everything works as expected"""
         fake_vmware.delete_onefs.return_value = {'worked': True}
 
-        output = tasks.delete(username='bob', machine_name='isi01')
+        output = tasks.delete(username='bob', machine_name='isi01', txn_id='myId')
         expected = {'content' : {}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -73,7 +75,7 @@ class TestTasks(unittest.TestCase):
         """``delete`` sets the error in the dictionary to the ValueError message"""
         fake_vmware.delete_onefs.side_effect = [ValueError("testing")]
 
-        output = tasks.delete(username='bob', machine_name='isi01')
+        output = tasks.delete(username='bob', machine_name='isi01', txn_id='myId')
         expected = {'content' : {}, 'error': 'testing', 'params': {}}
 
         self.assertEqual(output, expected)
@@ -83,7 +85,7 @@ class TestTasks(unittest.TestCase):
         """``image`` returns a dictionary when everything works as expected"""
         fake_vmware.list_images.return_value = []
 
-        output = tasks.image()
+        output = tasks.image(txn_id='myId')
         expected = {'content' : {'image': []}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -110,7 +112,8 @@ class TestTasks(unittest.TestCase):
                               encoding='utf-8',
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
-                              join_cluster=False)
+                              join_cluster=False,
+                              txn_id='myId')
         expected = {'content': {}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -137,7 +140,8 @@ class TestTasks(unittest.TestCase):
                               encoding='utf-8',
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
-                              join_cluster=True)
+                              join_cluster=True,
+                              txn_id='myId')
         expected = {'content': {}, 'error': None, 'params': {}}
 
         self.assertEqual(output, expected)
@@ -163,7 +167,8 @@ class TestTasks(unittest.TestCase):
                               encoding='utf-8',
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
-                              join_cluster=False)
+                              join_cluster=False,
+                              txn_id='myId')
         expected = {'content': {}, 'error': 'No node named mycluster-1 found', 'params': {}}
 
         self.assertEqual(output, expected)
@@ -191,7 +196,8 @@ class TestTasks(unittest.TestCase):
                               encoding='utf-8',
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
-                              join_cluster=False)
+                              join_cluster=False,
+                              txn_id='myId')
         expected = {'content': {}, 'error': "Cannot configure a node that's already configured", 'params': {}}
 
         self.assertEqual(output, expected)

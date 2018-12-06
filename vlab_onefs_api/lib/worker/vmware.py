@@ -3,16 +3,11 @@
 import time
 import random
 import os.path
-from celery.utils.log import get_task_logger
 from vlab_inf_common.vmware import vCenter, Ova, vim, virtual_machine, consume_task
 
 import ujson
 
 from vlab_onefs_api.lib import const
-
-
-logger = get_task_logger(__name__)
-logger.setLevel(const.VLAB_ONEFS_LOG_LEVEL.upper())
 
 
 def show_onefs(username):
@@ -34,7 +29,7 @@ def show_onefs(username):
     return onefs_vms
 
 
-def delete_onefs(username, machine_name):
+def delete_onefs(username, machine_name, logger):
     """Unregister and destroy a user's onefs node
 
     :Returns: None
@@ -44,6 +39,9 @@ def delete_onefs(username, machine_name):
 
     :param machine_name: The name of the VM to delete
     :type machine_name: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
@@ -62,7 +60,7 @@ def delete_onefs(username, machine_name):
             raise ValueError('No OneFS node named {} found'.format(machine_name))
 
 
-def create_onefs(username, machine_name, image, front_end, back_end):
+def create_onefs(username, machine_name, image, front_end, back_end, logger):
     """Deploy a OneFS node
 
     :Returns: Dictionary
@@ -81,6 +79,9 @@ def create_onefs(username, machine_name, image, front_end, back_end):
 
     :param back_end: The network to hook the internal network to
     :type back_end: String
+
+    :param logger: An object for logging messages
+    :type logger: logging.LoggerAdapter
     """
     with vCenter(host=const.INF_VCENTER_SERVER, user=const.INF_VCENTER_USER, \
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
