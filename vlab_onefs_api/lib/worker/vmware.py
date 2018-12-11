@@ -24,7 +24,7 @@ def show_onefs(username):
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for vm in folder.childEntity:
             info = virtual_machine.get_info(vcenter, vm)
-            if info['component'] == 'OneFS':
+            if info['meta']['component'] == 'OneFS':
                 onefs_vms[vm.name] = info
     return onefs_vms
 
@@ -49,7 +49,7 @@ def delete_onefs(username, machine_name, logger):
         for entity in folder.childEntity:
             if entity.name == machine_name:
                 info = virtual_machine.get_info(vcenter, entity)
-                if info['component'] == 'OneFS':
+                if info['meta']['component'] == 'OneFS':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
                     delete_task = entity.Destroy_Task()
