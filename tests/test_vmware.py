@@ -23,18 +23,18 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value =  {'component': 'OneFS',
-                                       'created': 1234,
-                                       'version': '8.0.0.4',
-                                       'configured': False,
-                                       'generation': 1}
+        fake_get_info.return_value =  {'meta' :{'component': 'OneFS',
+                                                'created': 1234,
+                                                'version': '8.0.0.4',
+                                                'configured': False,
+                                                'generation': 1}}
 
         output = vmware.show_onefs(username='alice')
-        expected = {'isi01': {'component': 'OneFS',
-                              'created': 1234,
-                              'version': '8.0.0.4',
-                              'configured': False,
-                              'generation': 1}}
+        expected = {'isi01': {'meta' :{'component': 'OneFS',
+                                                'created': 1234,
+                                                'version': '8.0.0.4',
+                                                'configured': False,
+                                                'generation': 1}}}
 
         self.assertEqual(output, expected)
 
@@ -47,11 +47,11 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'component': 'somethingElse',
-                                       'created': 1234,
-                                       'version': '8.0.0.4',
-                                       'configured': False,
-                                       'generation': 1}
+        fake_get_info.return_value = {'meta' :{'component': 'otherThing',
+                                                'created': 1234,
+                                                'version': '8.0.0.4',
+                                                'configured': False,
+                                                'generation': 1}}
 
         output = vmware.show_onefs(username='alice')
         expected = {}
@@ -153,11 +153,11 @@ class TestVMware(unittest.TestCase):
         fake_folder = MagicMock()
         fake_folder.childEntity = [fake_vm]
         fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
-        fake_get_info.return_value = {'component': 'OneFS',
-                                      'created': 1234,
-                                      'version': '8.0.0.4',
-                                      'configured': False,
-                                      'generation': 1}
+        fake_get_info.return_value = {'meta' :{'component': 'OneFS',
+                                                'created': 1234,
+                                                'version': '8.0.0.4',
+                                                'configured': False,
+                                                'generation': 1}}
         vmware.delete_onefs(username='alice', machine_name='isi01', logger=fake_logger)
 
         self.assertTrue(fake_power.called)
