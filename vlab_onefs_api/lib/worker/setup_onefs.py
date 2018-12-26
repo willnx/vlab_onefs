@@ -16,6 +16,8 @@ BOOT_WAIT = 60   # dumb sleep while waiting for the node to fully boot
 FORMAT_WAIT = 90 # dumb sleep waiting for the new VMDKs for format
 BUILD_WAIT = 90  # dumb sleep while OneFS applies the new config
 
+# Compliance mode license: http://licensing.west.isilon.com/internal-license.php?modules=0xfffff
+
 
 class vSphereConsole(object):
     """Login and return an interactive session with the HTML console for a VM"""
