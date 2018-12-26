@@ -174,7 +174,7 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
         config_network(console, netmask=int_netmask, ip_low=int_ip_low, ip_high=int_ip_high)
         # setup ext network
         logger.info('Settings up external network - Mask: {} Low: {} High: {}'.format(ext_netmask, ext_ip_low, ext_ip_high))
-        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high)
+        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high, ext_network=True)
         logger.info('Setting up default gateway for ext network to {}'.format(gateway))
         set_default_gateway(console, gateway)
         logger.info('Configuring SmartConnect - Zone: {} IP: {}'.format(sc_zonename, smartconnect_ip))
@@ -257,7 +257,7 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
         config_network(console, netmask=int_netmask, ip_low=int_ip_low, ip_high=int_ip_high)
         # setup ext network
         logger.info('Settings up external network - Mask: {} Low: {} High: {}'.format(ext_netmask, ext_ip_low, ext_ip_high))
-        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high)
+        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high, ext_network=True)
         logger.info('Setting up default gateway for ext network to {}'.format(gateway))
         set_default_gateway(console, gateway)
         logger.info('Configuring SmartConnect - Zone: {} IP: {}'.format(sc_zonename, smartconnect_ip))
@@ -340,7 +340,7 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         config_network(console, netmask=int_netmask, ip_low=int_ip_low, ip_high=int_ip_high)
         # setup ext network
         logger.info('Settings up external network - Mask: {} Low: {} High: {}'.format(ext_netmask, ext_ip_low, ext_ip_high))
-        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high)
+        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high, ext_network=True)
         logger.info('Setting up default gateway for ext network to {}'.format(gateway))
         set_default_gateway(console, gateway)
         logger.info('Configuring SmartConnect - Zone: {} IP: {}'.format(sc_zonename, smartconnect_ip))
@@ -426,8 +426,11 @@ def set_encoding(console, encoding):
     console.send_keys(mapping[encoding.lower()])
 
 
-def config_network(console, netmask, ip_low, ip_high):
+def config_network(console, netmask, ip_low, ip_high, ext_network=False):
     """Setting external or internal network information is the same series of prmopts"""
+    if ext_network:
+        # choose to use the ext interface, instead of the IB network...
+        console.send_keys('1')
     # set Netmask
     console.send_keys('1')
     console.send_keys(netmask)
