@@ -65,7 +65,7 @@ def create(self, username, machine_name, image, front_end, back_end, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        resp['content'] = vmware.create_onefs(username, machine_name, image, front_end, back_end)
+        resp['content'] = vmware.create_onefs(username, machine_name, image, front_end, back_end, logger)
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
