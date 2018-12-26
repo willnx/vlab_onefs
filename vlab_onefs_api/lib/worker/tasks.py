@@ -92,7 +92,7 @@ def delete(self, username, machine_name, txn_id):
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        vmware.delete_onefs(username, machine_name)
+        vmware.delete_onefs(username, machine_name, logger)
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)
