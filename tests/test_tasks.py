@@ -95,7 +95,7 @@ class TestTasks(unittest.TestCase):
     def test_config(self, fake_setup_onefs, fake_vmware):
         """``config`` returns a dictionary upon success"""
         fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
-                                                                'info': {'configured': False}}}
+                                                                'meta': {'configured': False}}}
 
         output = tasks.config(cluster_name='mycluster',
                               name='mycluster-1',
@@ -123,7 +123,7 @@ class TestTasks(unittest.TestCase):
     def test_config_join(self, fake_setup_onefs, fake_vmware):
         """``config`` returns a dictionary upon joining a node to an existing cluster"""
         fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
-                                                                'info': {'configured': False}}}
+                                                                'meta': {'configured': False}}}
 
         output = tasks.config(cluster_name='mycluster',
                               name='mycluster-1',
@@ -178,7 +178,7 @@ class TestTasks(unittest.TestCase):
     def test_config_already_configed(self, fake_setup_onefs, fake_vmware):
         """``config`` returns an error if the node is already configured"""
         fake_vmware.show_onefs.return_value = {'mycluster-1' : {'console': 'https://htmlconsole.com',
-                                                                'info': {'configured': True}}}
+                                                                'meta': {'configured': True}}}
 
 
         output = tasks.config(cluster_name='mycluster',

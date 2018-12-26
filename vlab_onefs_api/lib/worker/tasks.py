@@ -181,7 +181,7 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
         resp['error'] = error
         logger.error(error)
         return resp
-    elif node['info']['configured']:
+    elif node['meta']['configured']:
         error = "Cannot configure a node that's already configured"
         resp['error'] = error
         logger.error(error)
@@ -209,7 +209,7 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
                                               sc_zonename=sc_zonename,
                                               smartconnect_ip=smartconnect_ip,
                                               logger=logger)
-    node['info']['configured'] = True
-    vmware.update_meta(username, name, node['info'])
+    node['meta']['configured'] = True
+    vmware.update_meta(username, name, node['meta'])
     logger.info('Task complete')
     return resp
