@@ -15,6 +15,7 @@ from vlab_onefs_api.lib import const
 BOOT_WAIT = 60   # dumb sleep while waiting for the node to fully boot
 FORMAT_WAIT = 90 # dumb sleep waiting for the new VMDKs for format
 BUILD_WAIT = 90  # dumb sleep while OneFS applies the new config
+SECTION_PROCESS_PAUSE = 2 # allow the wizard to process a section, before moving onto the next one
 
 # Compliance mode license: http://licensing.west.isilon.com/internal-license.php?modules=0xfffff
 
@@ -385,6 +386,7 @@ def set_passwords(console, root='a', admin='a'):
     console.send_keys(admin)
     # Confirm admin password
     console.send_keys(admin)
+    time.sleep(SECTION_PROCESS_PAUSE)
 
 
 def set_esrs(console, enabled='no'):
@@ -426,6 +428,7 @@ def set_encoding(console, encoding):
         'latin-10' : '22'
     }
     console.send_keys(mapping[encoding.lower()])
+    time.sleep(SECTION_PROCESS_PAUSE)
 
 
 def config_network(console, netmask, ip_low, ip_high, ext_network=False):
@@ -451,6 +454,7 @@ def config_network(console, netmask, ip_low, ip_high, ext_network=False):
     console.send_keys(Keys.ENTER, auto_enter=False)
     console.send_keys(Keys.ENTER, auto_enter=False)
     console.send_keys(Keys.ENTER, auto_enter=False)
+    time.sleep(SECTION_PROCESS_PAUSE)
 
 
 def set_default_gateway(console, gateway):

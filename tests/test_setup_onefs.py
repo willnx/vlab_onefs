@@ -316,7 +316,8 @@ class TestWizardRoutines(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
-    def test_set_passwords(self):
+    @patch.object(setup_onefs.time, 'sleep')
+    def test_set_passwords(self, fake_sleep):
         """``set_passwords`` returns None"""
         output = setup_onefs.set_passwords(self.fake_console)
         expected = None
@@ -337,14 +338,16 @@ class TestWizardRoutines(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
-    def test_set_encoding(self):
+    @patch.object(setup_onefs.time, 'sleep')
+    def test_set_encoding(self, fake_sleep):
         """``set_encoding`` returns None"""
         output = setup_onefs.set_encoding(self.fake_console, 'utf-8')
         expected = None
 
         self.assertEqual(output, expected)
 
-    def test_config_network(self):
+    @patch.object(setup_onefs.time, 'sleep')
+    def test_config_network(self, fake_sleep):
         """``config_network`` returns None"""
         output = setup_onefs.config_network(self.fake_console,
                                             netmask='255.255.255.0',
