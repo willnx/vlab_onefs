@@ -23,7 +23,7 @@ def show_onefs(username):
                  password=const.INF_VCENTER_PASSWORD) as vcenter:
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for vm in folder.childEntity:
-            info = virtual_machine.get_info(vcenter, vm, ensure_ip=False)
+            info = virtual_machine.get_info(vcenter, vm)
             if info['meta']['component'] == 'OneFS':
                 onefs_vms[vm.name] = info
     return onefs_vms
@@ -48,7 +48,7 @@ def delete_onefs(username, machine_name, logger):
         folder = vcenter.get_by_name(name=username, vimtype=vim.Folder)
         for entity in folder.childEntity:
             if entity.name == machine_name:
-                info = virtual_machine.get_info(vcenter, entity, ensure_ip=False)
+                info = virtual_machine.get_info(vcenter, entity)
                 if info['meta']['component'] == 'OneFS':
                     logger.debug('powering off VM')
                     virtual_machine.power(entity, state='off')
@@ -107,7 +107,7 @@ def create_onefs(username, machine_name, image, front_end, back_end, logger):
                      'configured': False,
                      'generation': 1} # Versioning of the VM itself
         virtual_machine.set_meta(the_vm, meta_data)
-        info = virtual_machine.get_info(vcenter, the_vm, ensure_ip=False)
+        info = virtual_machine.get_info(vcenter, the_vm)
         return {the_vm.name: info}
 
 
