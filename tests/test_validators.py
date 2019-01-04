@@ -99,6 +99,12 @@ class TestValidaters(unittest.TestCase):
             validators.validate_names('-'.join(['a' for x in range(300)]),
                                       group='cluster name')
 
+    def test_validate_names_too_short(self):
+        """``validate_names`` raises ValueError if the hostname is too short"""
+        with self.assertRaises(ValueError):
+            validators.validate_names(hostname='',
+                                      group='cluster name')
+
     def test_validate_names_bad_name(self):
         """``validate_names`` raises ValueError if the hostname contains invalid chars"""
         with self.assertRaises(ValueError):
@@ -179,7 +185,7 @@ class TestValidaters(unittest.TestCase):
 
     def test_supplied_config_values_are_valid_join_error(self):
         """``supplied_config_values_are_valid`` Returns an error message if the join_cluster values are bad"""
-        error_msg = validators.supplied_config_values_are_valid(cluster_name='mycluster.foo_bar.org',
+        error_msg = validators.supplied_config_values_are_valid(cluster_name='my_cluster',
                                                                 int_netmask='',
                                                                 int_ip_low='',
                                                                 int_ip_high='',
@@ -191,7 +197,7 @@ class TestValidaters(unittest.TestCase):
                                                                 smartconnect_ip='',
                                                                 gateway='',
                                                                 join_cluster=True)
-        expected = 'Invalid name of mycluster.foo_bar.org supplied for cluster name'
+        expected = 'Invalid name of my_cluster supplied for cluster name'
         self.assertEqual(error_msg, expected)
 
     def test_supplied_config_values_are_valid_bad_value(self):
