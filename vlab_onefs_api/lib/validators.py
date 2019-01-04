@@ -180,7 +180,7 @@ def validate_ip_range(ip_low, ip_high, group):
 
     :Raises: ValueError
     """
-    if not ip_low <= ip_high:
+    if not ipaddress.IPv4Address(ip_low) <= ipaddress.IPv4Address(ip_high):
         error = 'IP {} larger than top of IP range {} for {}'.format(ip_low, ip_high, group)
         raise ValueError(error)
 
