@@ -131,18 +131,16 @@ def validate_names(hostname, group):
     if len(hostname) < 1:
         ok = False
         error = 'Cluster name cannot be empty'
-    else:
-        try:
-            int(hostname[0])
-            ok = False # hostname cannot start with a number
-        except ValueError:
-            # OneFS recommends limiting names to 11 chars for NetBIOS compatibility
-            if len(hostname) > 11:
-                ok = False
-                error = 'Cluster name cannot exceed 11 letters'
-            elif not all(allowed.match(x) for x in hostname.split(".")):
-                ok = False
-                error = 'Invalid name of {} supplied for {}'.format(hostname, group)
+    elif not hostname[0].isalpha():
+        error = 'Cluster name must start with a letter, supplied name {}'.format(hostname)
+        ok = False
+    # OneFS recommends limiting names to 11 chars for NetBIOS compatibility
+    elif len(hostname) > 11:
+        ok = False
+        error = 'Cluster name cannot exceed 11 letters'
+    elif not all(allowed.match(x) for x in hostname.split(".")):
+        ok = False
+        error = 'Invalid name of {} supplied for {}'.format(hostname, group)
     if not ok:
         raise ValueError(error)
 
