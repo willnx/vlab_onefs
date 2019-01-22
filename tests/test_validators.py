@@ -115,6 +115,11 @@ class TestValidaters(unittest.TestCase):
         with self.assertRaises(ValueError):
             validators.validate_names(hostname='sdf.foo_bar.com', group='cluster name')
 
+    def test_validate_names_not_alpha(self):
+        """``validate_names`` raises ValueError if the hostname does not start with a letter"""
+        with self.assertRaises(ValueError):
+            validators.validate_names(hostname='-sdf.foo_bar.com', group='cluster name')
+
     def test_validate_ips(self):
         """``validate_ips`` returns None upon success"""
         output = validators.validate_ips('192.168.1.1', '10.7.1.2', group='front end network')
