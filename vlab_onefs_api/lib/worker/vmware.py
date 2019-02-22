@@ -98,9 +98,13 @@ def create_onefs(username, machine_name, image, front_end, back_end, logger):
                                                      network_map=network_map,
                                                      username=username,
                                                      machine_name=machine_name,
-                                                     logger=logger)
+                                                     logger=logger,
+                                                     power_on=False)
         finally:
             ova.close()
+        # The OVA ships with ~2GB of RAM. The vOneFS docs recommend 6GB for heavy load.
+        adjust_ram(the_vm, mb_of_ram=4096)
+        virtual_machine.power(the_vm, state='on')
         meta_data = {'component': 'OneFS',
                      'created': time.time(),
                      'version': image,
@@ -188,3 +192,20 @@ def make_network_map(vcenter_networks, front_end, back_end):
             raise ValueError(error)
         net_map.append(map)
     return net_map
+
+
+def adjust_ram(vm, mb_of_ram=4096):
+    """Set the amount of RAM for a powered-off VM
+
+    :Returns: None
+
+    :param vm: The virtual machine to adjust
+    :type vm: vim.VirtualMachine
+
+    :param mb_of_ram: The number of MB of RAM/memory to give the virtual machine
+    :type mb_of_ram: Integer
+    """
+    config_spec = vim.vm.ConfigSpec()
+    config_spec.memoryMB = mb_of_ram
+
+    consume_task(vm.Reconfigure(config_spec))

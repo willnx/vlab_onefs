@@ -58,13 +58,14 @@ class TestVMware(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
-    @patch.object(vmware.virtual_machine, 'consume_task')
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'consume_task')
     @patch.object(vmware, 'make_network_map')
     @patch.object(vmware, 'Ova')
     @patch.object(vmware.virtual_machine, 'get_info')
     @patch.object(vmware.virtual_machine, 'deploy_from_ova')
     @patch.object(vmware, 'vCenter')
-    def test_create_onefs(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task):
+    def test_create_onefs(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task, fake_set_meta):
         """``create_onefs`` returns the new onefs's info when everything works"""
         fake_logger = MagicMock()
         fake_Ova.return_value.networks = ['vLabNetwork']
@@ -179,6 +180,86 @@ class TestVMware(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             vmware.delete_onefs(username='alice', machine_name='not a thing', logger=fake_logger)
+
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'make_network_map')
+    @patch.object(vmware, 'Ova')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware.virtual_machine, 'deploy_from_ova')
+    @patch.object(vmware, 'vCenter')
+    def test_create_onefs_power(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task, fake_set_meta):
+        """``create_onefs`` opts out of the deploy lib powering on the new VM"""
+        fake_logger = MagicMock()
+        fake_Ova.return_value.networks = ['vLabNetwork']
+        fake_get_info.return_value = {'worked' : True}
+        fake_deploy_from_ova.return_value.name = 'isi01'
+
+        vmware.create_onefs(username='alice',
+                            machine_name='isi01',
+                            image='8.0.0.4',
+                            front_end='externalNetwork',
+                            back_end='internalNetwork',
+                            logger=fake_logger)
+        _, call_kwargs = fake_deploy_from_ova.call_args
+        called_power = call_kwargs['power_on']
+        expected_power = False
+
+        self.assertEqual(called_power, expected_power)
+
+    @patch.object(vmware.virtual_machine, 'power')
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'make_network_map')
+    @patch.object(vmware, 'Ova')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware.virtual_machine, 'deploy_from_ova')
+    @patch.object(vmware, 'vCenter')
+    def test_create_onefs_power_false(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task, fake_set_meta, fake_power):
+        """``create_onefs`` manually powers on the VM"""
+        fake_logger = MagicMock()
+        fake_Ova.return_value.networks = ['vLabNetwork']
+        fake_get_info.return_value = {'worked' : True}
+        fake_deploy_from_ova.return_value.name = 'isi01'
+
+        vmware.create_onefs(username='alice',
+                            machine_name='isi01',
+                            image='8.0.0.4',
+                            front_end='externalNetwork',
+                            back_end='internalNetwork',
+                            logger=fake_logger)
+        _, call_kwargs = fake_power.call_args
+        called_power = call_kwargs['state']
+        expected_power = 'on'
+
+        self.assertEqual(called_power, expected_power)
+
+    @patch.object(vmware, 'adjust_ram')
+    @patch.object(vmware.virtual_machine, 'set_meta')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'make_network_map')
+    @patch.object(vmware, 'Ova')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware.virtual_machine, 'deploy_from_ova')
+    @patch.object(vmware, 'vCenter')
+    def test_create_onefs_ram(self, fake_vCenter, fake_deploy_from_ova, fake_get_info, fake_Ova, make_network_map, fake_consume_task, fake_set_meta, fake_adjust_ram):
+        """``create_onefs`` sets the amount of RAM the VM has"""
+        fake_logger = MagicMock()
+        fake_Ova.return_value.networks = ['vLabNetwork']
+        fake_get_info.return_value = {'worked' : True}
+        fake_deploy_from_ova.return_value.name = 'isi01'
+
+        vmware.create_onefs(username='alice',
+                            machine_name='isi01',
+                            image='8.0.0.4',
+                            front_end='externalNetwork',
+                            back_end='internalNetwork',
+                            logger=fake_logger)
+        _, call_kwargs = fake_adjust_ram.call_args
+        defined_ram = call_kwargs['mb_of_ram']
+        expected_ram = 4096
+
+        self.assertEqual(defined_ram, expected_ram)
 
     @patch.object(vmware.os, 'listdir')
     def test_list_images(self, fake_listdir):
