@@ -27,24 +27,26 @@ class vSphereConsole(object):
         options = Options()
         options.headless = headless
         self._driver = webdriver.Firefox(options=options, service_log_path='/var/log/webdriver.log')
-        self._driver.get(url)
+        login_page = 'https://{}/ui'.format(const.INF_VCENTER_SERVER)
         self._username = username
         self._password = password
+        self._driver.get(login_page)
         self._login()
-        self._console = self._get_console()
+        self._console = self._get_console(url)
         self.keys = Keys
 
     def _login(self):
         # Waits upwards of 30 seconds for the page to load
         username_field = WebDriverWait(self._driver, 30).until(
             EC.presence_of_element_located((By.ID, "username")))
-        username_field.send_keys('readonly@vsphere.local')
+        username_field.send_keys(self._username)
         password_field = self._driver.find_element_by_id('password')
-        password_field.send_keys('a')
+        password_field.send_keys(self._password)
         login_button = self._driver.find_element_by_id('submit')
         login_button.click()
 
-    def _get_console(self):
+    def _get_console(self, url):
+        self._driver.get(url)
         # Waits upwards of 30 seconds for the page to load
         console = WebDriverWait(self._driver, 30).until(
             EC.presence_of_element_located((By.ID, "mainCanvas")))
