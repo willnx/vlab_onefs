@@ -17,4 +17,4 @@ RUN apt remove --yes gcc
 
 WORKDIR /usr/local/lib/python3.6/dist-packages/vlab_onefs_api/lib/worker
 
-CMD ["celery", "-A", "tasks", "worker"]
+CMD ["celery", "-A", "tasks", "worker", "--time-limit", "3600"]
