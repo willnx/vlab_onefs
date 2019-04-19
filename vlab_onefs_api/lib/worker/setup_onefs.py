@@ -25,9 +25,10 @@ class vSphereConsole(object):
     def __init__(self, url, username=const.INF_VCENTER_READONLY_USER, headless=True,
                  password=const.INF_VCENTER_READONLY_PASSWORD):
         options = Options()
-        options.headless = headless
+        #options.headless = headless
         self._driver = webdriver.Firefox(options=options, service_log_path='/var/log/webdriver.log')
-        login_page = 'https://{}/ui'.format(const.INF_VCENTER_SERVER)
+        #login_page = 'https://{}/ui'.format(const.INF_VCENTER_SERVER)
+        login_page = 'https://vlab-vcenter.emc.com/ui'
         self._username = username
         self._password = password
         self._driver.get(login_page)
@@ -44,6 +45,11 @@ class vSphereConsole(object):
         password_field.send_keys(self._password)
         login_button = self._driver.find_element_by_id('submit')
         login_button.click()
+        # Waits for the login to complete; avoids race between getting auth cookie
+        # and attempting to access the HTML console
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.ID, "MainTemplateController"))
+        )
 
     def _get_console(self, url):
         self._driver.get(url)
