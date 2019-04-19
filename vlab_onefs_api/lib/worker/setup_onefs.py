@@ -44,6 +44,11 @@ class vSphereConsole(object):
         password_field.send_keys(self._password)
         login_button = self._driver.find_element_by_id('submit')
         login_button.click()
+        # Waits for the login to complete; avoids race between getting auth cookie
+        # and attempting to access the HTML console
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.ID, "MainTemplateController"))
+        )
 
     def _get_console(self, url):
         self._driver.get(url)
