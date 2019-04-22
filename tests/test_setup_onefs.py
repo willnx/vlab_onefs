@@ -38,7 +38,7 @@ class TestvSphereConsole(unittest.TestCase):
     def test_with(self, fake_webdriver):
         """vSphereConsole auto-closes the session upon exiting ``with`` statement"""
         fake_driver = MagicMock()
-        fake_webdriver.Firefox.return_value = fake_driver
+        fake_webdriver.Chrome.return_value = fake_driver
         with setup_onefs.vSphereConsole(url='https://someHTMLconsole.com') as console:
             pass
 
