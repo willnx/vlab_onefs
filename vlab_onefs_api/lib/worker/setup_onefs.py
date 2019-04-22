@@ -5,7 +5,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -25,8 +25,9 @@ class vSphereConsole(object):
     def __init__(self, url, username=const.INF_VCENTER_READONLY_USER, headless=True,
                  password=const.INF_VCENTER_READONLY_PASSWORD):
         options = Options()
-        options.headless = headless
-        self._driver = webdriver.Firefox(options=options, service_log_path='/var/log/webdriver.log')
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        self._driver = webdriver.Chrome(chrome_options=options, service_log_path='/var/log/webdriver.log')
         login_page = 'https://{}/ui'.format(const.INF_VCENTER_SERVER)
         self._username = username
         self._password = password
