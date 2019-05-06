@@ -107,7 +107,9 @@ def configure_new_cluster(version, logger, **kwargs):
     :param version: The version of OneFS to configure
     :type version: String
     """
-    if version >= '8.1.2.0':
+    if version >= '8.2.0.0':
+        return configure_new_8_2_0_cluster(logger=logger, **kwargs)
+    elif version >= '8.1.2.0':
         logger.info('Config OneFS >= 8.1.2.0')
         return configure_new_8_1_2_cluster(logger=logger, **kwargs)
     elif version >= '8.1.0.0':
@@ -367,6 +369,89 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         time.sleep(BUILD_WAIT)
 
 
+def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
+                              ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
+                              encoding, sc_zonename, smartconnect_ip, logger):
+    """Walk through the config Wizard to create a functional one-node cluster
+
+    :Returns: None
+
+    :param console_url: The URL to the vSphere HTML console for the OneFS node
+    :type console_url: String
+
+    :param cluster_name: The name to give the new cluster
+    :type cluster_name: String
+
+    :param int_netmask: The subnet mask for the internal OneFS network
+    :type int_netmask: String
+
+    :param int_ip_low: The smallest IP to assign to an internal NIC
+    :type int_ip_low: String (IPv4 address)
+
+    :param int_ip_high: The largest IP to assign to an internal NIC
+    :type int_ip_high: String (IPv4 address)
+
+    :param ext_ip_low: The smallest IP to assign to an external/public NIC
+    :type ext_ip_low: String (IPv4 address)
+
+    :param ext_ip_high: The largest IP to assign to an external/public NIC
+    :type ext_ip_high: String (IPv4 address)
+
+    :param gateway: The IP address for the default gateway
+    :type gateway: String (IPv4 address)
+
+    :param dns_servers: A common separated list of IPs of the DNS servers to use
+    :type dns_servers: String
+
+    :param encoding: The filesystem encoding to use.
+    :type encoding: String
+
+    :param sc_zonename: The SmartConnect Zone name to use. Skipped if None.
+    :type sc_zonename: String
+
+    :param smartconnect_ip: The IPv4 address to use as the SIP
+    :type smartconnect_ip: String (IPv4 address)
+
+    :param logger: A object for logging information/errors
+    :type logger: logging.Logger
+    """
+    logger.info('Setting up Selenium')
+    with vSphereConsole(console_url) as console:
+        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
+        time.sleep(BOOT_WAIT)
+        logger.info('Formatting disks')
+        format_disks(console)
+        logger.info('Accepting EULA')
+        make_new_and_accept_eual(console, auto_enter=True) # This is the only difference from 8.1.2.0...
+        logger.info('Setting root and admin passwords')
+        set_passwords(console)
+        logger.info("Naming cluster {}".format(cluster_name))
+        set_name(console, cluster_name) # 8.1.0.4 name comes before ESRS
+        logger.info("Settings encoding to {}".format(encoding))
+        set_encoding(console, encoding)
+        logger.info('Skipping ESRS config')
+        # ESRS not even set via Wizard...
+        # setup int network
+        logger.info('Setting up internal network - Mask: {} Low: {} High: {}'.format(int_netmask, int_ip_low, int_ip_high))
+        config_network(console, netmask=int_netmask, ip_low=int_ip_low, ip_high=int_ip_high)
+        # setup ext network
+        logger.info('Settings up external network - Mask: {} Low: {} High: {}'.format(ext_netmask, ext_ip_low, ext_ip_high))
+        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high, ext_network=True)
+        logger.info('Setting up default gateway for ext network to {}'.format(gateway))
+        set_default_gateway(console, gateway)
+        logger.info('Configuring SmartConnect - Zone: {} IP: {}'.format(sc_zonename, smartconnect_ip))
+        set_smartconnect(console, sc_zonename, smartconnect_ip)
+        logger.info('Setting DNS servers to {}'.format(dns_servers))
+        set_dns(console, dns_servers)
+        logger.info('Skipping timezone config')
+        set_timezone(console)
+        logger.info('Skipping join mode config')
+        set_join_mode(console)
+        logger.info('Commiting changes and waiting {} seconds'.format(BUILD_WAIT))
+        commit_config(console)
+        time.sleep(BUILD_WAIT)
+
+
 def format_disks(console):
     """vOneFS clusters require you to format the new VMDKs"""
     console.send_keys('yes')
@@ -374,13 +459,21 @@ def format_disks(console):
     time.sleep(FORMAT_WAIT)
 
 
-def make_new_and_accept_eual(console):
-    """First prompt of the Wizard; choose to make a new cluster, and accept the EULA"""
+def make_new_and_accept_eual(console, auto_enter=False):
+    """First prompt of the Wizard; choose to make a new cluster, and accept the EULA
+
+    :param console: An established session to the HTML console of OneFS
+    :type console: vSphereConsole
+
+    :param auto_enter: Press enter after skipping to the bottom of the EULA.
+                       For some reason, OneFS 8.2.0.0 requires this now...
+    :type auto_enter: Boolean
+    """
     # 1 means "make a new cluster"
     console.send_keys('1')
     # Accept EULA
     # Skip to the yes/no prompt
-    console.send_keys(console.keys.SHIFT, 'g', auto_enter=False)
+    console.send_keys(console.keys.SHIFT, 'g', auto_enter=auto_enter)
     console.send_keys('yes')
 
 

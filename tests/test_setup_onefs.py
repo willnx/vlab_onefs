@@ -195,6 +195,17 @@ class TestSetupFunctions(unittest.TestCase):
 
         self.assertEqual(called, expected)
 
+    @patch.object(setup_onefs, 'configure_new_8_2_0_cluster')
+    def test_configure_new_cluster_8_2_0(self, fake_configure_new_8_2_0_cluster, fake_vSphereConsole, fake_sleep):
+        """``configure_new_cluster`` executes the correct function for OneFS 8.2.0.x"""
+        fake_logger = MagicMock()
+        setup_onefs.configure_new_cluster(version='8.2.0.0', logger=fake_logger)
+
+        called = fake_configure_new_8_2_0_cluster.call_count
+        expected = 1
+
+        self.assertEqual(called, expected)
+
     def test_configure_new_8_0_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_8_0_cluster`` returns None"""
         fake_logger = MagicMock()
@@ -236,6 +247,51 @@ class TestSetupFunctions(unittest.TestCase):
         expected = None
 
         self.assertEqual(output, expected)
+
+    def test_configure_new_8_2_0_cluster(self, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_2_0_cluster`` returns None"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_2_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       smartconnect_ip='3.0.9.21')
+        expected = None
+
+        self.assertEqual(output, expected)
+
+    @patch.object(setup_onefs, 'make_new_and_accept_eual')
+    def test_configure_new_8_2_0_cluster_eula(self, fake_make_new_and_accept_eual, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_2_0_cluster`` presses enter before trying to accept the EULA"""
+        fake_logger = MagicMock()
+        setup_onefs.configure_new_8_2_0_cluster(logger=fake_logger,
+                                                console_url='https://someHTMLconsole.com',
+                                                cluster_name='mycluster',
+                                                int_netmask='255.255.255.0',
+                                                int_ip_low='8.6.7.5',
+                                                int_ip_high='8.6.7.50',
+                                                ext_netmask='255.255.255.0',
+                                                ext_ip_low='3.0.9.2',
+                                                ext_ip_high='3.0.9.20',
+                                                gateway='3.0.9.1',
+                                                dns_servers='1.1.1.1',
+                                                encoding='utf-8',
+                                                sc_zonename='myzone.foo.org',
+                                                smartconnect_ip='3.0.9.21')
+
+        _, the_kwargs = fake_make_new_and_accept_eual.call_args
+        pressed_enter = the_kwargs['auto_enter']
+
+        self.assertTrue(pressed_enter)
 
     def test_configure_new_8_1_2_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_8_1_2_cluster`` returns None"""
