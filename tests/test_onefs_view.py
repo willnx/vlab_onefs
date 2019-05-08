@@ -29,7 +29,8 @@ class TestOneFSView(unittest.TestCase):
         app.config['TESTING'] = True
         cls.app = app.test_client()
         # Mock Celery
-        app.celery_app = MagicMock()
+        cls.celery_app = MagicMock()
+        app.celery_app = cls.celery_app
         cls.fake_task = MagicMock()
         cls.fake_task.id = 'asdf-asdf-asdf'
         app.celery_app.send_task.return_value = cls.fake_task
@@ -171,6 +172,59 @@ class TestOneFSView(unittest.TestCase):
         expected = 400
 
         self.assertEqual(resp.status_code, expected)
+
+    def test_post_config_compliance_default(self):
+        """OneFSView - POST on /api/1/inf/onefs/config - the 'compliance' param defaults to False"""
+        payload = {"cluster_name": "mycluster",
+                   "name": "mycluster-1",
+                   "version": "8.0.0.4",
+                   "int_netmask": "255.255.255.0",
+                   "int_ip_low": "4.4.4.4",
+                   "int_ip_high": "4.4.4.40",
+                   "ext_netmask": "255.255.255.0",
+                   "ext_ip_low": "10.1.1.2",
+                   "ext_ip_high": "10.1.1.20",
+                   "smartconnect_ip": "10.1.1.21",
+                   "gateway": "10.1.1.1",
+                   "encoding": "utf-8",
+                   "sc_zonename": "myzone.foo.com",
+                   "dns_servers": ['1.1.1.1', '8.8.8.8']
+                  }
+        resp = self.app.post('/api/1/inf/onefs/config',
+                             json=payload,
+                             headers={'X-Auth': self.token})
+
+        _, the_kwargs = self.celery_app.send_task.call_args
+        compliance = the_kwargs['kwargs']['compliance']
+
+        self.assertFalse(compliance)
+
+    def test_post_config_compliance(self):
+        """OneFSView - POST on /api/1/inf/onefs/config - the 'compliance' is a boolean when set"""
+        payload = {"cluster_name": "mycluster",
+                   "name": "mycluster-1",
+                   "version": "8.0.0.4",
+                   "int_netmask": "255.255.255.0",
+                   "int_ip_low": "4.4.4.4",
+                   "int_ip_high": "4.4.4.40",
+                   "ext_netmask": "255.255.255.0",
+                   "ext_ip_low": "10.1.1.2",
+                   "ext_ip_high": "10.1.1.20",
+                   "smartconnect_ip": "10.1.1.21",
+                   "gateway": "10.1.1.1",
+                   "encoding": "utf-8",
+                   "sc_zonename": "myzone.foo.com",
+                   "compliance" : True,
+                   "dns_servers": ['1.1.1.1', '8.8.8.8']
+                  }
+        resp = self.app.post('/api/1/inf/onefs/config',
+                             json=payload,
+                             headers={'X-Auth': self.token})
+
+        _, the_kwargs = self.celery_app.send_task.call_args
+        compliance = the_kwargs['kwargs']['compliance']
+
+        self.assertTrue(compliance is True) # test for type, there is only one "True" object ever
 
 
 if __name__ == '__main__':

@@ -130,6 +130,11 @@ class OneFSView(TaskView):
                             "description": "The SIP to configure on the external network. Empty string is valid",
                             "type": "string"
                         },
+                        "compliance": {
+                            "description" : "Enable compliance mode",
+                            "type": "boolean",
+                            "default": "false",
+                        },
                         "encoding": {
                             "description": "The filesystem encoding to use.",
                             "type": "string",
@@ -251,6 +256,7 @@ class OneFSView(TaskView):
         sc_zonename     = kwargs['body'].get('sc_zonename', None)
         smartconnect_ip = kwargs['body'].get('smartconnect_ip', None)
         join_cluster    = kwargs['body'].get('join', False)
+        compliance      = kwargs['body'].get('compliance', False)
         dns_servers     = ','.join(kwargs['body'].get('dns_servers', []))
         # Ensure supplied values wont generate an error in the OneFS config wizard
         error = supplied_config_values_are_valid(int_netmask=int_netmask,
@@ -286,6 +292,7 @@ class OneFSView(TaskView):
                                                                             'sc_zonename' : sc_zonename,
                                                                             'smartconnect_ip' : smartconnect_ip,
                                                                             'join_cluster' : join_cluster,
+                                                                            'compliance' : compliance,
                                                                             'txn_id' : txn_id})
 
             resp_data['content'] = {'task-id': task.id}

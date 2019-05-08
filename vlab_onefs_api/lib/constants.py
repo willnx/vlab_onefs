@@ -26,6 +26,7 @@ DEFINED = OrderedDict([
             ('INF_VCENTER_READONLY_USER', environ.get('INF_VCENTER_READONLY_USER', 'readonly@vsphere.local')),
             ('INF_VCENTER_READONLY_PASSWORD', environ.get('INF_VCENTER_READONLY_PASSWORD', 'a')),
             ('VLAB_VERIFY_TOKEN', environ.get('VLAB_VERIFY_TOKEN', False)),
+            ('INTERAL_LICENSE_SERVER', environ.get('INTERAL_LICENSE_SERVER', 'http://some.server.org'))
           ])
 
 Constants = namedtuple('Constants', list(DEFINED.keys()))

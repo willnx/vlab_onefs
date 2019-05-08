@@ -113,6 +113,7 @@ class TestTasks(unittest.TestCase):
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
                               join_cluster=False,
+                              compliance=False,
                               txn_id='myId')
         expected = {'content': {}, 'error': None, 'params': {}}
 
@@ -141,6 +142,7 @@ class TestTasks(unittest.TestCase):
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
                               join_cluster=True,
+                              compliance=False,
                               txn_id='myId')
         expected = {'content': {}, 'error': None, 'params': {}}
 
@@ -168,6 +170,7 @@ class TestTasks(unittest.TestCase):
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
                               join_cluster=False,
+                              compliance=False,
                               txn_id='myId')
         expected = {'content': {}, 'error': 'No node named mycluster-1 found', 'params': {}}
 
@@ -197,6 +200,7 @@ class TestTasks(unittest.TestCase):
                               sc_zonename='myzone.foo.com',
                               smartconnect_ip='10.1.1.21',
                               join_cluster=False,
+                              compliance=False,
                               txn_id='myId')
         expected = {'content': {}, 'error': "Cannot configure a node that's already configured", 'params': {}}
 
