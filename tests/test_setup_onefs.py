@@ -86,24 +86,31 @@ class TestvSphereConsole(unittest.TestCase):
 
         self.assertEqual(the_args, expected)
 
+
 @patch.object(setup_onefs.time, 'sleep')
 @patch.object(setup_onefs, 'vSphereConsole')
 class TestSetupFunctions(unittest.TestCase):
     """A suite of test cases for the functions within setup_onefs.py"""
 
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_join_existing_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``join_existing_cluster`` sets the node into complinace mode"""
+        fake_logger = MagicMock()
+        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', True, fake_logger)
+        self.assertTrue(fake_enable_compliance_mode.called)
+
     def test_join_existing_cluster(self, fake_vSphereConsole, fake_sleep):
         """``join_existing_cluster`` returns None"""
         fake_logger = MagicMock()
-        output = setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', fake_logger)
+        output = setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
         expected = None
 
         self.assertEqual(output, expected)
 
-
     def test_join_existing_cluster_with(self, fake_vSphereConsole, fake_sleep):
         """``join_existing_cluster`` uses context manager of vSphereConsole"""
         fake_logger = MagicMock()
-        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', fake_logger)
+        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
 
         call_count = fake_vSphereConsole.return_value.__enter__.call_count
         expected = 1
@@ -113,7 +120,7 @@ class TestSetupFunctions(unittest.TestCase):
     def test_join_existing_cluster_pause(self, fake_vSphereConsole, fake_sleep):
         """``join_existing_cluster`` waits for the disks to format"""
         fake_logger = MagicMock()
-        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', fake_logger)
+        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
 
         paused = fake_sleep.called
 
@@ -123,11 +130,34 @@ class TestSetupFunctions(unittest.TestCase):
     def test_join_existing_cluster_formats(self, fake_vSphereConsole, fake_sleep, fake_format_disks):
         """``join_existing_cluster`` formats the disks"""
         fake_logger = MagicMock()
-        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', fake_logger)
+        setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
 
         formatted_disks = fake_format_disks.called
 
         self.assertTrue(formatted_disks)
+
+    @patch.object(setup_onefs, 'get_compliance_license')
+    def test_configure_new_cluster_compliance(self, fake_get_compliance_license, fake_vSphereConsole, fake_sleep):
+        """``configure_new_cluster`` Obtains a license when compliance is True"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_cluster(version='8.1.1.1',
+                                                   logger=fake_logger,
+                                                   console_url='https://someHTMLconsole.com',
+                                                   cluster_name='mycluster',
+                                                   int_netmask='255.255.255.0',
+                                                   int_ip_low='8.6.7.5',
+                                                   int_ip_high='8.6.7.50',
+                                                   ext_netmask='255.255.255.0',
+                                                   ext_ip_low='3.0.9.2',
+                                                   ext_ip_high='3.0.9.20',
+                                                   gateway='3.0.9.1',
+                                                   dns_servers='1.1.1.1',
+                                                   encoding='utf-8',
+                                                   sc_zonename='myzone.foo.org',
+                                                   compliance=True,
+                                                   smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_get_compliance_license.called)
 
     def test_configure_new_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` returns None"""
@@ -146,6 +176,7 @@ class TestSetupFunctions(unittest.TestCase):
                                                    dns_servers='1.1.1.1',
                                                    encoding='utf-8',
                                                    sc_zonename='myzone.foo.org',
+                                                   compliance=False,
                                                    smartconnect_ip='3.0.9.21')
         expected = None
 
@@ -155,7 +186,7 @@ class TestSetupFunctions(unittest.TestCase):
     def test_configure_new_cluster_8_0(self, fake_configure_new_8_0_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.0.0.x"""
         fake_logger = MagicMock()
-        setup_onefs.configure_new_cluster(version='8.0.0.1', logger=fake_logger)
+        setup_onefs.configure_new_cluster(version='8.0.0.1', compliance=False, logger=fake_logger)
 
         called = fake_configure_new_8_0_cluster.call_count
         expected = 1
@@ -166,7 +197,7 @@ class TestSetupFunctions(unittest.TestCase):
     def test_configure_new_cluster_8_1_0(self, fake_configure_new_8_1_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.1.0.x"""
         fake_logger = MagicMock()
-        setup_onefs.configure_new_cluster(version='8.1.0.3', logger=fake_logger)
+        setup_onefs.configure_new_cluster(version='8.1.0.3', compliance=False, logger=fake_logger)
 
         called = fake_configure_new_8_1_cluster.call_count
         expected = 1
@@ -177,7 +208,7 @@ class TestSetupFunctions(unittest.TestCase):
     def test_configure_new_cluster_8_1_1(self, fake_configure_new_8_1_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.1.1.x"""
         fake_logger = MagicMock()
-        setup_onefs.configure_new_cluster(version='8.1.1.2', logger=fake_logger)
+        setup_onefs.configure_new_cluster(version='8.1.1.2', compliance=False, logger=fake_logger)
 
         called = fake_configure_new_8_1_cluster.call_count
         expected = 1
@@ -188,7 +219,7 @@ class TestSetupFunctions(unittest.TestCase):
     def test_configure_new_cluster_8_1_2(self, fake_configure_new_8_1_2_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.1.2.x"""
         fake_logger = MagicMock()
-        setup_onefs.configure_new_cluster(version='8.1.2.0', logger=fake_logger)
+        setup_onefs.configure_new_cluster(version='8.1.2.0', compliance=False, logger=fake_logger)
 
         called = fake_configure_new_8_1_2_cluster.call_count
         expected = 1
@@ -199,12 +230,60 @@ class TestSetupFunctions(unittest.TestCase):
     def test_configure_new_cluster_8_2_0(self, fake_configure_new_8_2_0_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.2.0.x"""
         fake_logger = MagicMock()
-        setup_onefs.configure_new_cluster(version='8.2.0.0', logger=fake_logger)
+        setup_onefs.configure_new_cluster(version='8.2.0.0', compliance=False, logger=fake_logger)
 
         called = fake_configure_new_8_2_0_cluster.call_count
         expected = 1
 
         self.assertEqual(called, expected)
+
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_configure_new_8_0_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_0_cluster`` can configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_enable_compliance_mode.called)
+
+    @patch.object(setup_onefs, 'make_new_and_accept_eual')
+    def test_configure_new_8_0_cluster_compliance_license(self, fake_make_new_and_accept_eual, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_0_cluster`` passes the license as needed to configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        the_args, _ = fake_make_new_and_accept_eual.call_args
+        license = the_args[1]
+        expected = 'some-internal-license'
+
+        self.assertEqual(license, expected)
 
     def test_configure_new_8_0_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_8_0_cluster`` returns None"""
@@ -222,10 +301,107 @@ class TestSetupFunctions(unittest.TestCase):
                                                        dns_servers='1.1.1.1',
                                                        encoding='utf-8',
                                                        sc_zonename='myzone.foo.org',
+                                                       compliance_license=None,
                                                        smartconnect_ip='3.0.9.21')
         expected = None
 
         self.assertEqual(output, expected)
+
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_configure_new_8_1_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_1_cluster`` can configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_1_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_enable_compliance_mode.called)
+
+    @patch.object(setup_onefs, 'make_new_and_accept_eual')
+    def test_configure_new_8_1_cluster_compliance_license(self, fake_make_new_and_accept_eual, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_1_cluster`` passes the license as needed to configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_1_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        the_args, _ = fake_make_new_and_accept_eual.call_args
+        license = the_args[1]
+        expected = 'some-internal-license'
+
+        self.assertEqual(license, expected)
+
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_configure_new_8_1_2_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_1_2_cluster`` can configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_1_2_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_enable_compliance_mode.called)
+
+    @patch.object(setup_onefs, 'make_new_and_accept_eual')
+    def test_configure_new_8_1_2_cluster_compliance_license(self, fake_make_new_and_accept_eual, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_1_2_cluster`` passes the license as needed to configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_1_2_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        the_args, _ = fake_make_new_and_accept_eual.call_args
+        license = the_args[1]
+        expected = 'some-internal-license'
+
+        self.assertEqual(license, expected)
 
     def test_configure_new_8_1_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_8_1_cluster`` returns None"""
@@ -243,10 +419,60 @@ class TestSetupFunctions(unittest.TestCase):
                                                        dns_servers='1.1.1.1',
                                                        encoding='utf-8',
                                                        sc_zonename='myzone.foo.org',
+                                                       compliance_license=None,
                                                        smartconnect_ip='3.0.9.21')
         expected = None
 
         self.assertEqual(output, expected)
+
+
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_configure_new_8_2_0_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_2_0_cluster`` can configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_2_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_enable_compliance_mode.called)
+
+    @patch.object(setup_onefs, 'make_new_and_accept_eual')
+    def test_configure_new_8_2_0_cluster_compliance_license(self, fake_make_new_and_accept_eual, fake_vSphereConsole, fake_sleep):
+        """``configure_new_8_2_0_cluster`` passes the license as needed to configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_8_2_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        the_args, _ = fake_make_new_and_accept_eual.call_args
+        license = the_args[1]
+        expected = 'some-internal-license'
+
+        self.assertEqual(license, expected)
 
     def test_configure_new_8_2_0_cluster(self, fake_vSphereConsole, fake_sleep):
         """``configure_new_8_2_0_cluster`` returns None"""
@@ -264,6 +490,7 @@ class TestSetupFunctions(unittest.TestCase):
                                                        dns_servers='1.1.1.1',
                                                        encoding='utf-8',
                                                        sc_zonename='myzone.foo.org',
+                                                       compliance_license=None,
                                                        smartconnect_ip='3.0.9.21')
         expected = None
 
@@ -286,6 +513,7 @@ class TestSetupFunctions(unittest.TestCase):
                                                 dns_servers='1.1.1.1',
                                                 encoding='utf-8',
                                                 sc_zonename='myzone.foo.org',
+                                                compliance_license=None,
                                                 smartconnect_ip='3.0.9.21')
 
         _, the_kwargs = fake_make_new_and_accept_eual.call_args
@@ -309,6 +537,7 @@ class TestSetupFunctions(unittest.TestCase):
                                                        dns_servers='1.1.1.1',
                                                        encoding='utf-8',
                                                        sc_zonename='myzone.foo.org',
+                                                       compliance_license=None,
                                                        smartconnect_ip='3.0.9.21')
         expected = None
 
@@ -331,6 +560,7 @@ class TestSetupFunctions(unittest.TestCase):
                                                 dns_servers='1.1.1.1',
                                                 encoding='utf-8',
                                                 sc_zonename='myzone.foo.org',
+                                                compliance_license=None,
                                                 smartconnect_ip='3.0.9.21')
         called = fake_set_esrs.call_count
         expected = 0
@@ -367,7 +597,7 @@ class TestWizardRoutines(unittest.TestCase):
 
     def test_make_new_and_accept_eual(self):
         """``make_new_and_accept_eual`` returns None"""
-        output = setup_onefs.make_new_and_accept_eual(self.fake_console)
+        output = setup_onefs.make_new_and_accept_eual(self.fake_console, None)
         expected = None
 
         self.assertEqual(output, expected)
@@ -485,6 +715,18 @@ class TestWizardRoutines(unittest.TestCase):
         expected = None
 
         self.assertEqual(output, expected)
+
+    @patch.object(setup_onefs, 'requests')
+    def test_get_compliance_license(self, fake_requests):
+        """``get_compliance_license`` returns a license"""
+        fake_resp = MagicMock()
+        fake_resp.content = b'some-internal-license\n'
+        fake_requests.get.return_value = fake_resp
+
+        license = setup_onefs.get_compliance_license()
+        expected = 'some-internal-license'
+
+        self.assertEqual(license, expected)
 
 
 if __name__ == '__main__':

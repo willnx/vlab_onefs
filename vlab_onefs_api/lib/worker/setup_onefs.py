@@ -2,6 +2,7 @@
 """This module encapsulates configuring a OneFS node"""
 import time
 
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -16,8 +17,6 @@ BOOT_WAIT = 60   # dumb sleep while waiting for the node to fully boot
 FORMAT_WAIT = 90 # dumb sleep waiting for the new VMDKs for format
 BUILD_WAIT = 150  # dumb sleep while OneFS applies the new config
 SECTION_PROCESS_PAUSE = 2 # allow the wizard to process a section, before moving onto the next one
-
-# Compliance mode license: http://licensing.west.isilon.com/internal-license.php?modules=0xfffff
 
 
 class vSphereConsole(object):
@@ -86,7 +85,7 @@ class vSphereConsole(object):
             time.sleep(1)
 
 
-def join_existing_cluster(console_url, cluster_name, logger):
+def join_existing_cluster(console_url, cluster_name, compliance, logger):
     """Adds a new node to an existing cluster"""
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
@@ -94,6 +93,9 @@ def join_existing_cluster(console_url, cluster_name, logger):
         time.sleep(BOOT_WAIT) # Wait for the node to finish booting
         logger.info('Formatting disks')
         format_disks(console)
+        if compliance:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
         logger.info('Joining cluster {}'.format(cluster_name))
         console.send_keys('2')
         console.send_keys(cluster_name)
@@ -101,28 +103,32 @@ def join_existing_cluster(console_url, cluster_name, logger):
         time.sleep(BUILD_WAIT)
 
 
-def configure_new_cluster(version, logger, **kwargs):
+def configure_new_cluster(version, logger, compliance, **kwargs):
     """Because for some reason, the order of the Wizard changes with OneFS releases...
 
     :param version: The version of OneFS to configure
     :type version: String
     """
+    if compliance:
+        compliance_license = get_compliance_license()
+    else:
+        compliance_license = None
     if version >= '8.2.0.0':
-        return configure_new_8_2_0_cluster(logger=logger, **kwargs)
+        return configure_new_8_2_0_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.2.0':
         logger.info('Config OneFS >= 8.1.2.0')
-        return configure_new_8_1_2_cluster(logger=logger, **kwargs)
+        return configure_new_8_1_2_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.0.0':
         logger.info('Config OneFS 8.1.0 -> 8.1.1')
-        return configure_new_8_1_cluster(logger=logger, **kwargs)
+        return configure_new_8_1_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     else:
-        logger.info('Config OneFS 8.0.0')
-        return configure_new_8_0_cluster(logger=logger, **kwargs)
+        logger.info('Config OneFS 8.0.0 or older')
+        return configure_new_8_0_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
 
 
 def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
                               ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-                              encoding, sc_zonename, smartconnect_ip, logger):
+                              encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
     """Walk through the config Wizard to create a functional one-node cluster
 
     :Returns: None
@@ -163,6 +169,9 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
     :param smartconnect_ip: The IPv4 address to use as the SIP
     :type smartconnect_ip: String (IPv4 address)
 
+    :param compliance_license: The license key to create a compliance mode cluster
+    :type compliance_license: String
+
     :param logger: A object for logging information/errors
     :type logger: logging.Logger
     """
@@ -172,8 +181,11 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
         time.sleep(BOOT_WAIT) # Wait for the node to finish booting
         logger.info('Formatting disks')
         format_disks(console)
+        if compliance_license:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
         logger.info('Accepting EULA')
-        make_new_and_accept_eual(console)
+        make_new_and_accept_eual(console, compliance_license)
         logger.info('Setting root and admin passwords')
         set_passwords(console)
         logger.info('Skipping ESRS config')
@@ -205,7 +217,7 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
 
 def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
                               ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-                              encoding, sc_zonename, smartconnect_ip, logger):
+                              encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
     """Walk through the config Wizard to create a functional one-node cluster
 
     :Returns: None
@@ -246,6 +258,9 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
     :param smartconnect_ip: The IPv4 address to use as the SIP
     :type smartconnect_ip: String (IPv4 address)
 
+    :param compliance_license: The license key to create a compliance mode cluster
+    :type compliance_license: String
+
     :param logger: A object for logging information/errors
     :type logger: logging.Logger
     """
@@ -255,8 +270,11 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
         time.sleep(BOOT_WAIT)
         logger.info('Formatting disks')
         format_disks(console)
+        if compliance_license:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
         logger.info('Accepting EULA')
-        make_new_and_accept_eual(console)
+        make_new_and_accept_eual(console, compliance_license)
         logger.info('Setting root and admin passwords')
         set_passwords(console)
         logger.info("Naming cluster {}".format(cluster_name))
@@ -288,7 +306,7 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
 
 def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
                               ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-                              encoding, sc_zonename, smartconnect_ip, logger):
+                              encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
     """Walk through the config Wizard to create a functional one-node cluster
 
     :Returns: None
@@ -329,6 +347,9 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
     :param smartconnect_ip: The IPv4 address to use as the SIP
     :type smartconnect_ip: String (IPv4 address)
 
+    :param compliance_license: The license key to create a compliance mode cluster
+    :type compliance_license: String
+
     :param logger: A object for logging information/errors
     :type logger: logging.Logger
     """
@@ -338,8 +359,11 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         time.sleep(BOOT_WAIT)
         logger.info('Formatting disks')
         format_disks(console)
+        if compliance_license:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
         logger.info('Accepting EULA')
-        make_new_and_accept_eual(console)
+        make_new_and_accept_eual(console, compliance_license)
         logger.info('Setting root and admin passwords')
         set_passwords(console)
         logger.info("Naming cluster {}".format(cluster_name))
@@ -371,7 +395,7 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
 
 def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
                               ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-                              encoding, sc_zonename, smartconnect_ip, logger):
+                              encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
     """Walk through the config Wizard to create a functional one-node cluster
 
     :Returns: None
@@ -412,6 +436,9 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
     :param smartconnect_ip: The IPv4 address to use as the SIP
     :type smartconnect_ip: String (IPv4 address)
 
+    :param compliance_license: The license key to create a compliance mode cluster
+    :type compliance_license: String
+
     :param logger: A object for logging information/errors
     :type logger: logging.Logger
     """
@@ -421,8 +448,11 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
         time.sleep(BOOT_WAIT)
         logger.info('Formatting disks')
         format_disks(console)
+        if compliance_license:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
         logger.info('Accepting EULA')
-        make_new_and_accept_eual(console, auto_enter=True) # This is the only difference from 8.1.2.0...
+        make_new_and_accept_eual(console, compliance_license, auto_enter=True) # This is the only difference from 8.1.2.0...
         logger.info('Setting root and admin passwords')
         set_passwords(console)
         logger.info("Naming cluster {}".format(cluster_name))
@@ -459,11 +489,15 @@ def format_disks(console):
     time.sleep(FORMAT_WAIT)
 
 
-def make_new_and_accept_eual(console, auto_enter=False):
+def make_new_and_accept_eual(console, compliance_license, auto_enter=False):
     """First prompt of the Wizard; choose to make a new cluster, and accept the EULA
 
     :param console: An established session to the HTML console of OneFS
     :type console: vSphereConsole
+
+    :param compliance_license: You must enter the license before forming the cluster.
+                               Only applies if making a compliance mode cluster.
+    :type compliance_license: String
 
     :param auto_enter: Press enter after skipping to the bottom of the EULA.
                        For some reason, OneFS 8.2.0.0 requires this now...
@@ -471,6 +505,8 @@ def make_new_and_accept_eual(console, auto_enter=False):
     """
     # 1 means "make a new cluster"
     console.send_keys('1')
+    if compliance_license:
+        console.send_keys(compliance_license)
     # Accept EULA
     # Skip to the yes/no prompt
     console.send_keys(console.keys.SHIFT, 'g', auto_enter=auto_enter)
@@ -605,3 +641,18 @@ def commit_config(console):
     """Submit the new config"""
     # Commit changes?
     console.send_keys('yes')
+
+
+def enable_compliance_mode(console):
+    """Turn on compliance mode"""
+    console.send_keys('4')
+    console.send_keys('yes')
+    # the node will reboot now
+    time.sleep(BOOT_WAIT)
+
+
+def get_compliance_license():
+    """Obtain an internal-only license for compliance mode"""
+    resp = requests.get(const.INTERAL_LICENSE_SERVER)
+    license = resp.content.decode().strip()
+    return license

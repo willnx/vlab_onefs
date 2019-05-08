@@ -124,7 +124,7 @@ def image(self, txn_id):
 @app.task(name='onefs.config', bind=True)
 def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
            int_ip_high, ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
-           encoding, sc_zonename, smartconnect_ip, join_cluster, txn_id):
+           encoding, sc_zonename, smartconnect_ip, join_cluster, compliance, txn_id):
     """Turn a blank OneFS node into a usable device
 
     :Returns: Dictionary
@@ -168,6 +168,9 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
     :param join_cluster: Add the node to an existing cluster
     :type join_cluster: Boolean
 
+    :param compliance: Set to True when creating a Compliance mode cluster
+    :type compliance: Boolean
+
     :param txn_id: A unique string supplied by the client to track the call through logs
     :type txn_id: String
     """
@@ -191,7 +194,7 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
         console_url = node['console']
         if join_cluster:
             logger.info('Joining node to cluster {}'.format(cluster_name))
-            setup_onefs.join_existing_cluster(console_url, cluster_name, logger)
+            setup_onefs.join_existing_cluster(console_url, cluster_name, compliance, logger)
         else:
             logger.info('Setting up new cluster named {}'.format(cluster_name))
             setup_onefs.configure_new_cluster(version=version,
@@ -208,6 +211,7 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
                                               encoding=encoding,
                                               sc_zonename=sc_zonename,
                                               smartconnect_ip=smartconnect_ip,
+                                              compliance=compliance,
                                               logger=logger)
     node['meta']['configured'] = True
     vmware.update_meta(username, name, node['meta'])
