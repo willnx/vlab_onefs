@@ -117,6 +117,7 @@ def configure_new_cluster(version, logger, compliance, **kwargs):
         return configure_new_8_2_0_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.2.0':
         logger.info('Config OneFS >= 8.1.2.0')
+        kwargs['version'] = version
         return configure_new_8_1_2_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.0.0':
         logger.info('Config OneFS 8.1.0 -> 8.1.1')
@@ -305,7 +306,7 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
 
 
 def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
-                              ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
+                              ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers, version,
                               encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
     """Walk through the config Wizard to create a functional one-node cluster
 
@@ -350,6 +351,9 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
     :param compliance_license: The license key to create a compliance mode cluster
     :type compliance_license: String
 
+    :param version: The version of OneFS being deployed
+    :type version: String
+
     :param logger: A object for logging information/errors
     :type logger: logging.Logger
     """
@@ -362,6 +366,9 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         if compliance_license:
             logger.info('Rebooting node into compliance mode')
             enable_compliance_mode(console)
+            if version >= '8.1.3.0':
+                # 8.1.3 does not require a license for Smartlock Compliance
+                compliance_license = None
         logger.info('Accepting EULA')
         make_new_and_accept_eual(console, compliance_license)
         logger.info('Setting root and admin passwords')
@@ -452,7 +459,8 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
             logger.info('Rebooting node into compliance mode')
             enable_compliance_mode(console)
         logger.info('Accepting EULA')
-        make_new_and_accept_eual(console, compliance_license, auto_enter=True) # This is the only difference from 8.1.2.0...
+        # OneFS 8.1.3 and newer do not require a license to enable SmartLock
+        make_new_and_accept_eual(console, compliance_license=False, auto_enter=True) # This is the only difference from 8.1.2.0...
         logger.info('Setting root and admin passwords')
         set_passwords(console)
         logger.info("Naming cluster {}".format(cluster_name))
@@ -653,6 +661,6 @@ def enable_compliance_mode(console):
 
 def get_compliance_license():
     """Obtain an internal-only license for compliance mode"""
-    resp = requests.get(const.INTERAL_LICENSE_SERVER)
+    resp = requests.get(const.INTERNAL_LICENSE_SERVER)
     license = resp.content.decode().strip()
     return license
