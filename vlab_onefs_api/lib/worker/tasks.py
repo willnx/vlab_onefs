@@ -217,3 +217,18 @@ def config(self, cluster_name, name, username, version, int_netmask, int_ip_low,
     vmware.update_meta(username, name, node['meta'])
     logger.info('Task complete')
     return resp
+
+
+@app.task(name='onefs.modify_network', bind=True)
+def modify_network(self, username, machine_name, new_network, txn_id):
+    """Change the network an OneFS node is connected to"""
+    logger = get_task_logger(txn_id=txn_id, task_id=self.request.id, loglevel=const.VLAB_ONEFS_LOG_LEVEL.upper())
+    resp = {'content' : {}, 'error': None, 'params': {}}
+    logger.info('Task starting')
+    try:
+        vmware.update_network(username, machine_name, new_network)
+    except ValueError as doh:
+        logger.error('Task failed: {}'.format(doh))
+        resp['error'] = '{}'.format(doh)
+    logger.info('Task complete')
+    return resp

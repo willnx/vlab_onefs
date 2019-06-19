@@ -314,6 +314,66 @@ class TestVMware(unittest.TestCase):
 
         self.assertTrue(fake_set_meta.called)
 
+    @patch.object(vmware.virtual_machine, 'change_network')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'vCenter')
+    def test_update_network(self, fake_vCenter, fake_consume_task, fake_get_info, fake_change_network):
+        """``update_network`` Returns None upon success"""
+        fake_logger = MagicMock()
+        fake_vm = MagicMock()
+        fake_vm.name = 'myOneFS'
+        fake_folder = MagicMock()
+        fake_folder.childEntity = [fake_vm]
+        fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
+        fake_vCenter.return_value.__enter__.return_value.networks = {'wootTown' : 'someNetworkObject'}
+        fake_get_info.return_value = {'meta': {'component' : 'OneFS'}}
+
+        result = vmware.update_network(username='pat',
+                                       machine_name='myOneFS',
+                                       new_network='wootTown')
+
+        self.assertTrue(result is None)
+
+    @patch.object(vmware.virtual_machine, 'change_network')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'vCenter')
+    def test_update_network_no_vm(self, fake_vCenter, fake_consume_task, fake_get_info, fake_change_network):
+        """``update_network`` Raises ValueError if the supplied VM doesn't exist"""
+        fake_logger = MagicMock()
+        fake_vm = MagicMock()
+        fake_vm.name = 'myIIQ'
+        fake_folder = MagicMock()
+        fake_folder.childEntity = [fake_vm]
+        fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
+        fake_vCenter.return_value.__enter__.return_value.networks = {'wootTown' : 'someNetworkObject'}
+        fake_get_info.return_value = {'meta': {'component' : 'OneFS'}}
+
+        with self.assertRaises(ValueError):
+            vmware.update_network(username='pat',
+                                  machine_name='SomeOtherMachine',
+                                  new_network='wootTown')
+
+    @patch.object(vmware.virtual_machine, 'change_network')
+    @patch.object(vmware.virtual_machine, 'get_info')
+    @patch.object(vmware, 'consume_task')
+    @patch.object(vmware, 'vCenter')
+    def test_update_network_no_network(self, fake_vCenter, fake_consume_task, fake_get_info, fake_change_network):
+        """``update_network`` Raises ValueError if the supplied new network doesn't exist"""
+        fake_logger = MagicMock()
+        fake_vm = MagicMock()
+        fake_vm.name = 'myOneFS'
+        fake_folder = MagicMock()
+        fake_folder.childEntity = [fake_vm]
+        fake_vCenter.return_value.__enter__.return_value.get_by_name.return_value = fake_folder
+        fake_vCenter.return_value.__enter__.return_value.networks = {'wootTown' : 'someNetworkObject'}
+        fake_get_info.return_value = {'meta': {'component' : 'OneFS'}}
+
+        with self.assertRaises(ValueError):
+            vmware.update_network(username='pat',
+                                  machine_name='myOneFS',
+                                  new_network='dohNet')
 
 
 if __name__ == '__main__':

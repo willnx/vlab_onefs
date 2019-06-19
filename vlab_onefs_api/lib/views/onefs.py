@@ -9,7 +9,7 @@ from socket import inet_aton
 import ujson
 from flask import current_app
 from flask_classy import request, route, Response
-from vlab_inf_common.views import TaskView
+from vlab_inf_common.views import MachineView
 from vlab_inf_common.vmware import vCenter, vim
 from vlab_api_common import describe, get_logger, requires, validate_input
 
@@ -21,9 +21,10 @@ from vlab_onefs_api.lib.validators import supplied_config_values_are_valid
 logger = get_logger(__name__, loglevel=const.VLAB_ONEFS_LOG_LEVEL)
 
 
-class OneFSView(TaskView):
+class OneFSView(MachineView):
     """API end point for working with OneFS nodes"""
     route_base = '/api/1/inf/onefs'
+    RESOURCE = 'onefs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
                     "description": "Create a new vOneFS node",
