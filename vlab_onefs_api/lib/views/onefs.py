@@ -23,7 +23,7 @@ logger = get_logger(__name__, loglevel=const.VLAB_ONEFS_LOG_LEVEL)
 
 class OneFSView(MachineView):
     """API end point for working with OneFS nodes"""
-    route_base = '/api/1/inf/onefs'
+    route_base = '/api/2/inf/onefs'
     RESOURCE = 'onefs'
     POST_SCHEMA = { "$schema": "http://json-schema.org/draft-04/schema#",
                     "type": "object",
@@ -192,8 +192,8 @@ class OneFSView(MachineView):
         body = kwargs['body']
         machine_name = body['name']
         image = body['image']
-        front_end = body['frontend']
-        back_end = body['backend']
+        front_end = '{}_{}'.format(username, body['frontend'])
+        back_end = '{}_{}'.format(username, body['backend'])
         task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))

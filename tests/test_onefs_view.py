@@ -35,9 +35,20 @@ class TestOneFSView(unittest.TestCase):
         cls.fake_task.id = 'asdf-asdf-asdf'
         app.celery_app.send_task.return_value = cls.fake_task
 
-    def test_get_task(self):
-        """OneFSView - GET on /api/1/inf/onefs returns a task-id"""
+
+    def test_v1_deprecated(self):
+        """OneFSView - GET on /api/1/inf/onefs returns an HTTP 404"""
         resp = self.app.get('/api/1/inf/onefs',
+                            headers={'X-Auth': self.token})
+
+        status = resp.status_code
+        expected = 404
+
+        self.assertEqual(status, expected)
+
+    def test_get_task(self):
+        """OneFSView - GET on /api/2/inf/onefs returns a task-id"""
+        resp = self.app.get('/api/2/inf/onefs',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -46,18 +57,18 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_get_task_link(self):
-        """OneFSView - GET on /api/1/inf/onefs sets the Link header"""
-        resp = self.app.get('/api/1/inf/onefs',
+        """OneFSView - GET on /api/2/inf/onefs sets the Link header"""
+        resp = self.app.get('/api/2/inf/onefs',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_post_task(self):
-        """OneFSView - POST on /api/1/inf/onefs returns a task-id"""
-        resp = self.app.post('/api/1/inf/onefs',
+        """OneFSView - POST on /api/2/inf/onefs returns a task-id"""
+        resp = self.app.post('/api/2/inf/onefs',
                              headers={'X-Auth': self.token},
                              json={'name': "isiO1",
                                    'image': "8.0.0.4",
@@ -70,8 +81,8 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_post_task_link(self):
-        """OneFSView - POST on /api/1/inf/onefs sets the Link header"""
-        resp = self.app.post('/api/1/inf/onefs',
+        """OneFSView - POST on /api/2/inf/onefs sets the Link header"""
+        resp = self.app.post('/api/2/inf/onefs',
                              headers={'X-Auth': self.token},
                              json={'name': "isiO1",
                                    'image': "8.0.0.4",
@@ -79,13 +90,13 @@ class TestOneFSView(unittest.TestCase):
                                    'backend': "internalNetwork"})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_delete_task(self):
-        """OneFSView - DELETE on /api/1/inf/onefs returns a task-id"""
-        resp = self.app.delete('/api/1/inf/onefs',
+        """OneFSView - DELETE on /api/2/inf/onefs returns a task-id"""
+        resp = self.app.delete('/api/2/inf/onefs',
                                headers={'X-Auth': self.token},
                                json={'name': "isi01"})
 
@@ -95,19 +106,19 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_delete_task_link(self):
-        """OneFSView - DELETE on /api/1/inf/onefs sets the Link header"""
-        resp = self.app.delete('/api/1/inf/onefs',
+        """OneFSView - DELETE on /api/2/inf/onefs sets the Link header"""
+        resp = self.app.delete('/api/2/inf/onefs',
                                headers={'X-Auth': self.token},
                                json={'name': "isi01"})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_get_image_task(self):
-        """OneFSView - GET on /api/1/inf/onefs/image returns a task-id"""
-        resp = self.app.get('/api/1/inf/onefs/image',
+        """OneFSView - GET on /api/2/inf/onefs/image returns a task-id"""
+        resp = self.app.get('/api/2/inf/onefs/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.json['content']['task-id']
@@ -116,17 +127,17 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(task_id, expected)
 
     def test_get_image_task_link(self):
-        """OneFSView - GET on /api/1/inf/onefs/image sets the Link header"""
-        resp = self.app.get('/api/1/inf/onefs/image',
+        """OneFSView - GET on /api/2/inf/onefs/image sets the Link header"""
+        resp = self.app.get('/api/2/inf/onefs/image',
                             headers={'X-Auth': self.token})
 
         task_id = resp.headers['Link']
-        expected = '<https://localhost/api/1/inf/onefs/task/asdf-asdf-asdf>; rel=status'
+        expected = '<https://localhost/api/2/inf/onefs/task/asdf-asdf-asdf>; rel=status'
 
         self.assertEqual(task_id, expected)
 
     def test_post_config_ok(self):
-        """OneFSView - POST on /api/1/inf/onefs/config returns 202 upon success"""
+        """OneFSView - POST on /api/2/inf/onefs/config returns 202 upon success"""
         payload = {"cluster_name": "mycluster",
                    "name": "mycluster-1",
                    "version": "8.0.0.4",
@@ -142,7 +153,7 @@ class TestOneFSView(unittest.TestCase):
                    "sc_zonename": "myzone.foo.com",
                    "dns_servers": ['1.1.1.1', '8.8.8.8']
                   }
-        resp = self.app.post('/api/1/inf/onefs/config',
+        resp = self.app.post('/api/2/inf/onefs/config',
                              json=payload,
                              headers={'X-Auth': self.token})
         expected = 202
@@ -150,7 +161,7 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(resp.status_code, expected)
 
     def test_post_config_bad_input(self):
-        """OneFSView - POST on /api/1/inf/onefs/config returns 400 when supplied with bad input"""
+        """OneFSView - POST on /api/2/inf/onefs/config returns 400 when supplied with bad input"""
         payload = {"cluster_name": "mycluster",
                    "name": "mycluster-1",
                    "version": "8.0.0.4",
@@ -166,7 +177,7 @@ class TestOneFSView(unittest.TestCase):
                    "sc_zonename": "myzone.foobar.com",
                    "dns_servers": ['1.1.1.1', '8.8.8.8']
                   }
-        resp = self.app.post('/api/1/inf/onefs/config',
+        resp = self.app.post('/api/2/inf/onefs/config',
                              json=payload,
                              headers={'X-Auth': self.token})
         expected = 400
@@ -174,7 +185,7 @@ class TestOneFSView(unittest.TestCase):
         self.assertEqual(resp.status_code, expected)
 
     def test_post_config_compliance_default(self):
-        """OneFSView - POST on /api/1/inf/onefs/config - the 'compliance' param defaults to False"""
+        """OneFSView - POST on /api/2/inf/onefs/config - the 'compliance' param defaults to False"""
         payload = {"cluster_name": "mycluster",
                    "name": "mycluster-1",
                    "version": "8.0.0.4",
@@ -190,7 +201,7 @@ class TestOneFSView(unittest.TestCase):
                    "sc_zonename": "myzone.foo.com",
                    "dns_servers": ['1.1.1.1', '8.8.8.8']
                   }
-        resp = self.app.post('/api/1/inf/onefs/config',
+        resp = self.app.post('/api/2/inf/onefs/config',
                              json=payload,
                              headers={'X-Auth': self.token})
 
@@ -200,7 +211,7 @@ class TestOneFSView(unittest.TestCase):
         self.assertFalse(compliance)
 
     def test_post_config_compliance(self):
-        """OneFSView - POST on /api/1/inf/onefs/config - the 'compliance' is a boolean when set"""
+        """OneFSView - POST on /api/2/inf/onefs/config - the 'compliance' is a boolean when set"""
         payload = {"cluster_name": "mycluster",
                    "name": "mycluster-1",
                    "version": "8.0.0.4",
@@ -217,7 +228,7 @@ class TestOneFSView(unittest.TestCase):
                    "compliance" : True,
                    "dns_servers": ['1.1.1.1', '8.8.8.8']
                   }
-        resp = self.app.post('/api/1/inf/onefs/config',
+        resp = self.app.post('/api/2/inf/onefs/config',
                              json=payload,
                              headers={'X-Auth': self.token})
 
