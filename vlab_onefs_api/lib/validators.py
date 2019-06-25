@@ -138,9 +138,12 @@ def validate_names(hostname, group):
     elif len(hostname) > 11:
         ok = False
         error = 'Cluster name cannot exceed 11 letters'
+    elif '.' in hostname:
+        ok = False
+        error = 'OneFS nodes cannot have dots "." in their name. Supplied: {}'.format(hostname)
     elif not all(allowed.match(x) for x in hostname.split(".")):
         ok = False
-        error = 'Invalid name of {} supplied for {}'.format(hostname, group)
+        error = 'Invalid hostname of {} supplied for {}'.format(hostname, group)
     if not ok:
         raise ValueError(error)
 

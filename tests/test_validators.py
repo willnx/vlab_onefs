@@ -93,6 +93,11 @@ class TestValidaters(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
+    def test_validate_names_dots(self):
+        """``validate_names`` raises ValueError if the hostname contains dots '.'"""
+        with self.assertRaises(ValueError):
+            validators.validate_names('v8.0.0.7-1', 'v8.0.0.7')
+
     def test_validate_names_too_long(self):
         """``validate_names`` raises ValueError if the hostname is too long"""
         with self.assertRaises(ValueError):
@@ -202,7 +207,7 @@ class TestValidaters(unittest.TestCase):
                                                                 smartconnect_ip='',
                                                                 gateway='',
                                                                 join_cluster=True)
-        expected = 'Invalid name of my_cluster supplied for cluster name'
+        expected = 'Invalid hostname of my_cluster supplied for cluster name'
         self.assertEqual(error_msg, expected)
 
     def test_supplied_config_values_are_valid_bad_value(self):
