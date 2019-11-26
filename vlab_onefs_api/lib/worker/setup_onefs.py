@@ -13,9 +13,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from vlab_onefs_api.lib import const
 
 
-BOOT_WAIT = 60   # dumb sleep while waiting for the node to fully boot
-FORMAT_WAIT = 90 # dumb sleep waiting for the new VMDKs for format
-BUILD_WAIT = 150  # dumb sleep while OneFS applies the new config
+BOOT_WAIT = 30    # dumb sleep while waiting for the node to fully boot
+FORMAT_WAIT = 120 # dumb sleep waiting for the new VMDKs for format
+BUILD_WAIT = 180  # dumb sleep while OneFS applies the new config
 SECTION_PROCESS_PAUSE = 2 # allow the wizard to process a section, before moving onto the next one
 
 
