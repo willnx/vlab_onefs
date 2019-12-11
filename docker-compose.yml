@@ -7,9 +7,6 @@ services:
       willnx/vlab-onefs-api
     environment:
       - VLAB_URL=https://localhost
-      - INF_VCENTER_SERVER=virtlab.igs.corp
-      - INF_VCENTER_USER=Administrator@vsphere.local
-      - INF_VCENTER_PASSWORD=1.Password
     volumes:
       - ./vlab_onefs_api:/usr/lib/python3.6/site-packages/vlab_onefs_api
     command: ["python3", "app.py"]
@@ -19,12 +16,19 @@ services:
       willnx/vlab-onefs-worker
     volumes:
       - ./vlab_onefs_api:/usr/local/lib/python3.6/dist-packages/vlab_onefs_api/
+      - /home/willhn/code/vlab/vlab_inf_common/vlab_inf_common:/usr/local/lib/python3.6/dist-packages/vlab_inf_common
       - /mnt/raid/images/onefs:/images:ro
+      - /mnt/tmp:/home
     environment:
-      - INF_VCENTER_SERVER=changeME
-      - INF_VCENTER_USER=changeME
-      - INF_VCENTER_PASSWORD=changeME
-      - INF_VCENTER_TOP_LVL_DIR=/vlab
+      - INF_VCENTER_SERVER=vlab-vcenter.emc.com
+      - INF_VCENTER_USER=Administrator@vlab.local
+      - INF_VCENTER_PASSWORD=IsilonR0cks!
+      - INF_VCENTER_DATASTORE=generalStorage,generalStorage2,generalStorage3
+      - INF_VCENTER_TOP_LVL_DIR=/vlab/users
+      - INF_VCENTER_RESORUCE_POOL=generalCompute
+      - INF_VCENTER_READONLY_USER=readonly@vlab.local
+      - INTERAL_LICENSE_SERVER=http://licensing.west.isilon.com/internal-license.php?modules=0xfffff
+
 
   onefs-broker:
     image:

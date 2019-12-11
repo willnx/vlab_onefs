@@ -122,12 +122,12 @@ class TestSetupFunctions(unittest.TestCase):
         fake_logger = MagicMock()
         setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
 
-        paused = fake_sleep.called
+        waited_for_prompt = fake_vSphereConsole.return_value.__enter__.return_value.wait_for_prompt.called
 
-        self.assertTrue(paused)
+        self.assertTrue(waited_for_prompt)
 
     @patch.object(setup_onefs, 'format_disks')
-    def test_join_existing_cluster_formats(self, fake_vSphereConsole, fake_sleep, fake_format_disks):
+    def test_join_existing_cluster_formats(self, fake_format_disks, fake_vSphereConsole, fake_sleep):
         """``join_existing_cluster`` formats the disks"""
         fake_logger = MagicMock()
         setup_onefs.join_existing_cluster('https://someHTMLconsole.com', 'mycluster', False, fake_logger)
@@ -616,15 +616,14 @@ class TestWizardRoutines(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
-    @patch.object(setup_onefs.time, 'sleep')
-    def test_format_disks(self, fake_sleep):
+    def test_format_disks(self):
         """``format_disks`` blocks while the disks format"""
         setup_onefs.format_disks(self.fake_console)
 
-        args, _ = fake_sleep.call_args
-        expected = (setup_onefs.FORMAT_WAIT,)
+        waited_for_prompt = self.fake_console.wait_for_prompt.called
 
-        self.assertEqual(args, expected)
+
+        self.assertTrue(waited_for_prompt)
 
     def test_make_new_and_accept_eual(self):
         """``make_new_and_accept_eual`` returns None"""

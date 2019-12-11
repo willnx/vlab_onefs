@@ -13,9 +13,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from vlab_onefs_api.lib import const
 
 
-BOOT_WAIT = 30    # dumb sleep while waiting for the node to fully boot
-FORMAT_WAIT = 120 # dumb sleep waiting for the new VMDKs for format
-BUILD_WAIT = 180  # dumb sleep while OneFS applies the new config
 SECTION_PROCESS_PAUSE = 2 # allow the wizard to process a section, before moving onto the next one
 
 
@@ -24,9 +21,12 @@ class vSphereConsole(object):
     def __init__(self, url, username=const.INF_VCENTER_READONLY_USER, headless=True,
                  password=const.INF_VCENTER_READONLY_PASSWORD):
         options = Options()
+        options.add_experimental_option('w3c', False)
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
-        self._driver = webdriver.Chrome(chrome_options=options, service_log_path='/var/log/webdriver.log')
+        self._driver = webdriver.Chrome(chrome_options=options,
+                                        service_log_path='/var/log/webdriver.log',
+                                        desired_capabilities={'loggingPrefs': {'performance': 'ALL'}})
         login_page = 'https://{}/ui'.format(const.INF_VCENTER_SERVER)
         self._username = username
         self._password = password
@@ -84,13 +84,36 @@ class vSphereConsole(object):
             self._console.send_keys(Keys.ENTER)
             time.sleep(1)
 
+    def wait_for_prompt(self, timeout=30):
+        """Wait for vCenter to stop sending data to be rendered in the HTML console.
+
+        :Returns: None
+
+        :param timeout: How long to wait for data to show up in the HTML console
+        :type timeout: Integer
+        """
+        begin_wait = time.time()
+        while time.time() - begin_wait < timeout:
+            # The HTML console in vSphere uses websockets to render an HTML canvas.
+            # The performance log of the chromedriver can track incoming/outgoing
+            # packets. While the config is *doing something* vCenter will push
+            # console data to the browser to be rendered in the Canvas.
+            # When the console is at a prompt waiting for user input, vCenter
+            # sends *no* data to the browser.
+            # We can use this aspect of how the HTML console works to determine
+            # if the console is waiting for the automation to input data.
+            if self._driver.get_log('performance'):
+                # Every call of the log empties it. When there's no new performance
+                # logging messages, we get an empty list.
+                begin_wait = time.time()
+
 
 def join_existing_cluster(console_url, cluster_name, compliance, logger):
     """Adds a new node to an existing cluster"""
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
-        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
-        time.sleep(BOOT_WAIT) # Wait for the node to finish booting
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt() # Wait for the node to finish booting
         logger.info('Formatting disks')
         format_disks(console)
         if compliance:
@@ -99,8 +122,11 @@ def join_existing_cluster(console_url, cluster_name, compliance, logger):
         logger.info('Joining cluster {}'.format(cluster_name))
         console.send_keys('2')
         console.send_keys(cluster_name)
-        logger.info('Waiting {} seconds for the node to join'.format(BUILD_WAIT))
-        time.sleep(BUILD_WAIT)
+        logger.info('Waiting for the node to join')
+        console.wait_for_prompt(timeout=20)
+        logger.info("proactive retry of node add")
+        console.send_keys(cluster_name)
+        console.wait_for_prompt(timeout=20)
 
 
 def configure_new_cluster(version, logger, compliance, **kwargs):
@@ -178,8 +204,8 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
     """
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
-        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
-        time.sleep(BOOT_WAIT) # Wait for the node to finish booting
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt() # Wait for the node to finish booting
         logger.info('Formatting disks')
         format_disks(console)
         if compliance_license:
@@ -211,9 +237,9 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
         set_timezone(console)
         logger.info('Skipping join mode config')
         set_join_mode(console)
-        logger.info('Commiting changes and waiting {} seconds'.format(BUILD_WAIT))
+        logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
-        time.sleep(BUILD_WAIT)
+        console.wait_for_prompt()
 
 
 def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -267,8 +293,8 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
     """
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
-        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
-        time.sleep(BOOT_WAIT)
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt()
         logger.info('Formatting disks')
         format_disks(console)
         if compliance_license:
@@ -300,9 +326,9 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
         set_timezone(console)
         logger.info('Skipping join mode config')
         set_join_mode(console)
-        logger.info('Commiting changes and waiting {} seconds'.format(BUILD_WAIT))
+        logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
-        time.sleep(BUILD_WAIT)
+        console.wait_for_prompt()
 
 
 def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -359,8 +385,8 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
     """
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
-        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
-        time.sleep(BOOT_WAIT)
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt()
         logger.info('Formatting disks')
         format_disks(console)
         if compliance_license:
@@ -395,9 +421,9 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         set_timezone(console)
         logger.info('Skipping join mode config')
         set_join_mode(console)
-        logger.info('Commiting changes and waiting {} seconds'.format(BUILD_WAIT))
+        logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
-        time.sleep(BUILD_WAIT)
+        console.wait_for_prompt()
 
 
 def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -451,8 +477,8 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
     """
     logger.info('Setting up Selenium')
     with vSphereConsole(console_url) as console:
-        logger.info('Waiting {} seconds for node to fully boot'.format(BOOT_WAIT))
-        time.sleep(BOOT_WAIT)
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt()
         logger.info('Formatting disks')
         format_disks(console)
         if compliance_license:
@@ -485,16 +511,16 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
         set_timezone(console)
         logger.info('Skipping join mode config')
         set_join_mode(console)
-        logger.info('Commiting changes and waiting {} seconds'.format(BUILD_WAIT))
+        logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
-        time.sleep(BUILD_WAIT)
+        console.wait_for_prompt()
 
 
 def format_disks(console):
     """vOneFS clusters require you to format the new VMDKs"""
     console.send_keys('yes')
     # sleep here while disks format...
-    time.sleep(FORMAT_WAIT)
+    console.wait_for_prompt(timeout=60)
 
 
 def make_new_and_accept_eual(console, compliance_license, auto_enter=False):
@@ -656,7 +682,7 @@ def enable_compliance_mode(console):
     console.send_keys('4')
     console.send_keys('yes')
     # the node will reboot now
-    time.sleep(BOOT_WAIT)
+    console.wait_for_prompt()
 
 
 def get_compliance_license():
