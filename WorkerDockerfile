@@ -19,8 +19,8 @@ RUN wget --no-check-certificate -O /tmp/get-pip.py https://bootstrap.pypa.io/get
     python3 /tmp/get-pip.py && \
     rm /tmp/get-pip.py
 
-COPY google-chrome-stable_73_amd64.deb /tmp
-RUN  dpkg -i /tmp/google-chrome-stable_73_amd64.deb && apt-get install -f
+COPY google-chrome-stable_current_amd64.deb /tmp
+RUN  dpkg -i /tmp/google-chrome-stable_current_amd64.deb && apt-get install -f
 
 COPY chromedriver /usr/local/bin
 COPY dist/*.whl /tmp

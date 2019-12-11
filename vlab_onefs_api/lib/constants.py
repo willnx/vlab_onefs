@@ -12,7 +12,7 @@ from collections import namedtuple, OrderedDict
 
 DEFINED = OrderedDict([
             ('VLAB_ONEFS_LOG_LEVEL', environ.get('VLAB_ONEFS_LOG_LEVEL', 'INFO')),
-            ('INF_VCENTER_SERVER', environ.get('INF_VCENTER_SERVER', 'localhost')),
+            ('INF_VCENTER_SERVER', environ.get('INF_VCENTER_SERVER', 'vlab-vcenter.emc.com')),
             ('INF_VCENTER_PORT', int(environ.get('INFO_VCENTER_PORT', 443))),
             ('INF_VCENTER_USER', environ.get('INF_VCENTER_USER', 'tester')),
             ('INF_VCENTER_PASSWORD', environ.get('INF_VCENTER_PASSWORD', 'a')),
@@ -23,7 +23,7 @@ DEFINED = OrderedDict([
             ('VLAB_MESSAGE_BROKER', environ.get('VLAB_MESSAGE_BROKER', 'onefs-broker')),
             ('VLAB_URL', environ.get('VLAB_URL', 'https://localhost')),
             ('VLAB_ONEFS_IMAGES_DIR', environ.get('VLAB_ONEFS_IMAGES_DIR', '/images')),
-            ('INF_VCENTER_READONLY_USER', environ.get('INF_VCENTER_READONLY_USER', 'readonly@vsphere.local')),
+            ('INF_VCENTER_READONLY_USER', environ.get('INF_VCENTER_READONLY_USER', 'readonly@vlab.local')),
             ('INF_VCENTER_READONLY_PASSWORD', environ.get('INF_VCENTER_READONLY_PASSWORD', 'a')),
             ('VLAB_VERIFY_TOKEN', environ.get('VLAB_VERIFY_TOKEN', False)),
             ('INTERNAL_LICENSE_SERVER', environ.get('INTERNAL_LICENSE_SERVER', 'http://some.server.org'))
