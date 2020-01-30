@@ -5,8 +5,6 @@ services:
       - "5000:5000"
     image:
       willnx/vlab-onefs-api
-    environment:
-      - VLAB_URL=https://localhost
     volumes:
       - ./vlab_onefs_api:/usr/lib/python3.6/site-packages/vlab_onefs_api
     command: ["python3", "app.py"]
