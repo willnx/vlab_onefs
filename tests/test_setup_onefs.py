@@ -182,6 +182,17 @@ class TestSetupFunctions(unittest.TestCase):
 
         self.assertEqual(output, expected)
 
+    @patch.object(setup_onefs, 'configure_new_7_2_cluster')
+    def test_configure_new_cluster_7_2(self, fake_configure_new_7_2_cluster, fake_vSphereConsole, fake_sleep):
+        """``configure_new_cluster`` executes the correct function for OneFS 7.2.x"""
+        fake_logger = MagicMock()
+        setup_onefs.configure_new_cluster(version='7.2.1.6', compliance=False, logger=fake_logger)
+
+        called = fake_configure_new_7_2_cluster.call_count
+        expected = 1
+
+        self.assertEqual(called, expected)
+
     @patch.object(setup_onefs, 'configure_new_8_0_cluster')
     def test_configure_new_cluster_8_0(self, fake_configure_new_8_0_cluster, fake_vSphereConsole, fake_sleep):
         """``configure_new_cluster`` executes the correct function for OneFS 8.0.0.x"""
@@ -289,6 +300,50 @@ class TestSetupFunctions(unittest.TestCase):
         """``configure_new_8_0_cluster`` returns None"""
         fake_logger = MagicMock()
         output = setup_onefs.configure_new_8_0_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license=None,
+                                                       smartconnect_ip='3.0.9.21')
+        expected = None
+
+        self.assertEqual(output, expected)
+
+    @patch.object(setup_onefs, 'enable_compliance_mode')
+    def test_configure_new_7_2_cluster_compliance(self, fake_enable_compliance_mode, fake_vSphereConsole, fake_sleep):
+        """``configure_new_7_2_cluster`` can configure a compliance mode cluster"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_7_2_cluster(logger=fake_logger,
+                                                       console_url='https://someHTMLconsole.com',
+                                                       cluster_name='mycluster',
+                                                       int_netmask='255.255.255.0',
+                                                       int_ip_low='8.6.7.5',
+                                                       int_ip_high='8.6.7.50',
+                                                       ext_netmask='255.255.255.0',
+                                                       ext_ip_low='3.0.9.2',
+                                                       ext_ip_high='3.0.9.20',
+                                                       gateway='3.0.9.1',
+                                                       dns_servers='1.1.1.1',
+                                                       encoding='utf-8',
+                                                       sc_zonename='myzone.foo.org',
+                                                       compliance_license='some-internal-license',
+                                                       smartconnect_ip='3.0.9.21')
+
+        self.assertTrue(fake_enable_compliance_mode.called)
+
+    def test_configure_new_7_2_cluster(self, fake_vSphereConsole, fake_sleep):
+        """``configure_new_7_2_cluster`` returns None"""
+        fake_logger = MagicMock()
+        output = setup_onefs.configure_new_7_2_cluster(logger=fake_logger,
                                                        console_url='https://someHTMLconsole.com',
                                                        cluster_name='mycluster',
                                                        int_netmask='255.255.255.0',

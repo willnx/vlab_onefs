@@ -140,17 +140,112 @@ def configure_new_cluster(version, logger, compliance, **kwargs):
     else:
         compliance_license = None
     if version >= '8.2.0.0':
+        logger.info("Config OneFS 8.2.0 and newer")
         return configure_new_8_2_0_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.2.0':
-        logger.info('Config OneFS >= 8.1.2.0')
+        logger.info('Config OneFS 8.1.2 -> 8.1.3')
         kwargs['version'] = version
         return configure_new_8_1_2_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
     elif version >= '8.1.0.0':
         logger.info('Config OneFS 8.1.0 -> 8.1.1')
         return configure_new_8_1_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
-    else:
-        logger.info('Config OneFS 8.0.0 or older')
+    elif version >= '8.0.0.0':
+        logger.info('Config OneFS 8.0.0 -> 8.0.1')
         return configure_new_8_0_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
+    else:
+        logger.info("Config OneFS 7.2.1 or older")
+        return configure_new_7_2_cluster(logger=logger, compliance_license=compliance_license, **kwargs)
+
+
+def configure_new_7_2_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
+                              ext_netmask, ext_ip_low, ext_ip_high, gateway, dns_servers,
+                              encoding, sc_zonename, smartconnect_ip, compliance_license, logger):
+    """Walk through the config Wizard to create a functional one-node cluster
+
+    :Returns: None
+
+    :param console_url: The URL to the vSphere HTML console for the OneFS node
+    :type console_url: String
+
+    :param cluster_name: The name to give the new cluster
+    :type cluster_name: String
+
+    :param int_netmask: The subnet mask for the internal OneFS network
+    :type int_netmask: String
+
+    :param int_ip_low: The smallest IP to assign to an internal NIC
+    :type int_ip_low: String (IPv4 address)
+
+    :param int_ip_high: The largest IP to assign to an internal NIC
+    :type int_ip_high: String (IPv4 address)
+
+    :param ext_ip_low: The smallest IP to assign to an external/public NIC
+    :type ext_ip_low: String (IPv4 address)
+
+    :param ext_ip_high: The largest IP to assign to an external/public NIC
+    :type ext_ip_high: String (IPv4 address)
+
+    :param gateway: The IP address for the default gateway
+    :type gateway: String (IPv4 address)
+
+    :param dns_servers: A common separated list of IPs of the DNS servers to use
+    :type dns_servers: String
+
+    :param encoding: The filesystem encoding to use.
+    :type encoding: String
+
+    :param sc_zonename: The SmartConnect Zone name to use. Skipped if None.
+    :type sc_zonename: String
+
+    :param smartconnect_ip: The IPv4 address to use as the SIP
+    :type smartconnect_ip: String (IPv4 address)
+
+    :param compliance_license: The license key to create a compliance mode cluster
+    :type compliance_license: String
+
+    :param logger: A object for logging information/errors
+    :type logger: logging.Logger
+    """
+    logger.info('Setting up Selenium')
+    with vSphereConsole(console_url) as console:
+        logger.info('Waiting for node to fully boot')
+        console.wait_for_prompt() # Wait for the node to finish booting
+        logger.info('Formatting disks')
+        format_disks(console)
+        if compliance_license:
+            logger.info('Rebooting node into compliance mode')
+            enable_compliance_mode(console)
+        logger.info('Accepting EULA')
+        make_new_and_accept_eual(console, compliance_license)
+        logger.info('Setting root and admin passwords')
+        set_passwords(console)
+        logger.info('Skipping ESRS config')
+        set_esrs(console) # 8.0.0.x; ESRS comes before everything else...
+        logger.info("Naming cluster {}".format(cluster_name))
+        set_name(console, cluster_name)
+        logger.info("Settings encoding to {}".format(encoding))
+        set_encoding(console, encoding)
+        # setup int network
+        logger.info('Setting up internal network - Mask: {} Low: {} High: {}'.format(int_netmask, int_ip_low, int_ip_high))
+        # many_enters is the ONE difference between 7.2 and 8.0...
+        config_network(console, netmask=int_netmask, ip_low=int_ip_low, ip_high=int_ip_high, many_enters=False)
+        # setup ext network
+        logger.info('Settings up external network - Mask: {} Low: {} High: {}'.format(ext_netmask, ext_ip_low, ext_ip_high))
+        config_network(console, netmask=ext_netmask, ip_low=ext_ip_low, ip_high=ext_ip_high, ext_network=True)
+        logger.info('Setting up default gateway for ext network to {}'.format(gateway))
+        set_default_gateway(console, gateway)
+        logger.info('Configuring SmartConnect - Zone: {} IP: {}'.format(sc_zonename, smartconnect_ip))
+        set_smartconnect(console, sc_zonename, smartconnect_ip)
+        logger.info('Setting DNS servers to {}'.format(dns_servers))
+        set_dns(console, dns_servers)
+        logger.info('Skipping timezone config')
+        set_timezone(console)
+        logger.info('Skipping join mode config')
+        set_join_mode(console)
+        logger.info('Committing changes and waiting for the cluster to form')
+        commit_config(console)
+        console.wait_for_prompt(timeout=60) # isi firmware status --save is slow
+
 
 
 def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -520,7 +615,7 @@ def format_disks(console):
     """vOneFS clusters require you to format the new VMDKs"""
     console.send_keys('yes')
     # sleep here while disks format...
-    console.wait_for_prompt(timeout=60)
+    console.wait_for_prompt(timeout=90)
 
 
 def make_new_and_accept_eual(console, compliance_license, auto_enter=False):
@@ -602,7 +697,7 @@ def set_encoding(console, encoding):
     time.sleep(SECTION_PROCESS_PAUSE)
 
 
-def config_network(console, netmask, ip_low, ip_high, ext_network=False):
+def config_network(console, netmask, ip_low, ip_high, ext_network=False, many_enters=True):
     """Setting external or internal network information is the same series of prmopts"""
     if ext_network:
         # choose to use the ext interface, instead of the IB network...
@@ -624,7 +719,10 @@ def config_network(console, netmask, ip_low, ip_high, ext_network=False):
     # onto the next section
     console.send_keys(Keys.ENTER, auto_enter=False)
     console.send_keys(Keys.ENTER, auto_enter=False)
-    console.send_keys(Keys.ENTER, auto_enter=False)
+    if many_enters:
+        # OneFS 8.0 and newer need an extra return to actually exit
+        # but OneFS 7.2.1 and older don't
+        console.send_keys(Keys.ENTER, auto_enter=False)
     time.sleep(SECTION_PROCESS_PAUSE)
 
 
