@@ -13,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from vlab_onefs_api.lib import const
 
 
+DEFAULT_ROOT_PW = 'a'
 SECTION_PROCESS_PAUSE = 2 # allow the wizard to process a section, before moving onto the next one
 
 
@@ -245,6 +246,7 @@ def configure_new_7_2_cluster(console_url, cluster_name, int_netmask, int_ip_low
         logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
         console.wait_for_prompt(timeout=60) # isi firmware status --save is slow
+        set_sysctls(console)
 
 
 
@@ -335,6 +337,7 @@ def configure_new_8_0_cluster(console_url, cluster_name, int_netmask, int_ip_low
         logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
         console.wait_for_prompt()
+        set_sysctls(console)
 
 
 def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -424,6 +427,7 @@ def configure_new_8_1_cluster(console_url, cluster_name, int_netmask, int_ip_low
         logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
         console.wait_for_prompt()
+        set_sysctls(console)
 
 
 def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -519,6 +523,7 @@ def configure_new_8_1_2_cluster(console_url, cluster_name, int_netmask, int_ip_l
         logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
         console.wait_for_prompt()
+        set_sysctls(console)
 
 
 def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_low, int_ip_high,
@@ -609,6 +614,7 @@ def configure_new_8_2_0_cluster(console_url, cluster_name, int_netmask, int_ip_l
         logger.info('Committing changes and waiting for the cluster to form')
         commit_config(console)
         console.wait_for_prompt()
+        set_sysctls(console)
 
 
 def format_disks(console):
@@ -642,7 +648,7 @@ def make_new_and_accept_eual(console, compliance_license, auto_enter=False):
     console.send_keys('yes')
 
 
-def set_passwords(console, root='a', admin='a'):
+def set_passwords(console, root=DEFAULT_ROOT_PW, admin='a'):
     """Set the root and admin user passwords"""
     # Set root password
     console.send_keys(root)
@@ -788,3 +794,24 @@ def get_compliance_license():
     resp = requests.get(const.INTERNAL_LICENSE_SERVER)
     license = resp.content.decode().strip()
     return license
+
+
+def set_sysctls(console):
+    """Configure persistent sysctls for OneFS, so it "plays nice" with vSphere"""
+    # Login to the shell
+    console.send_keys('root')
+    console.send_keys(DEFAULT_ROOT_PW)
+    # VMware Tools on a Linux VM increases the SCSI timeout from 90 to 180.
+    # OneFS does not support VMware Tools, so we have to manually adjust the
+    # value. If you don't set this, then when there's a delay in the storage
+    # on vSphere, OneFS will *increase* load on the storage which just makes
+    # things worse.
+    console.send_keys('isi_sysctl_cluster kern.cam.da.default_timeout=180')
+    # Reboot instead of dropping into the debugger.
+    # Both consume more CPU than an typical machine, but the debugger
+    # requires manual intervention to reduce CPU usage. This is really
+    # painful in a cascading failure, like if the ESXi host loses all
+    # connections to the storage. At least with a boot loop, if you fix
+    # the storage problem, the CPU usage problem can resolves itself.
+    console.send_keys('isi_sysctl_cluster debug.debugger_on_panic=0')
+    console.send_keys('exit')
