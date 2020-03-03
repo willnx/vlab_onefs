@@ -814,3 +814,4 @@ def set_sysctls(console):
     # connections to the storage. At least with a boot loop, if you fix
     # the storage problem, the CPU usage problem can resolves itself.
     console.send_keys('isi_sysctl_cluster debug.debugger_on_panic=0')
+    console.send_keys('exit')

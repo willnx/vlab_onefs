@@ -817,7 +817,7 @@ class TestWizardRoutines(unittest.TestCase):
         """``set_sysctls`` logins into the OneFS shell"""
         setup_onefs.set_sysctls(self.fake_console)
 
-        user, password, _, _ = self.fake_console.send_keys.call_args_list
+        user, password = self.fake_console.send_keys.call_args_list[:2]
         user = user[0][0] # pull the 1st positional arg
         password = password[0][0]
 
@@ -831,12 +831,21 @@ class TestWizardRoutines(unittest.TestCase):
         setup_onefs.set_sysctls(self.fake_console)
 
         sysctls = self.fake_console.send_keys.call_args_list[2:] # chop off the login
+        sysctls.pop() # chop off the exit
         sysctls = [x[0][0] for x in sysctls]
         expected = ['isi_sysctl_cluster kern.cam.da.default_timeout=180',
                     'isi_sysctl_cluster debug.debugger_on_panic=0']
         # sorted() to avoid false positive due to ordering
         self.assertEqual(sorted(sysctls), sorted(expected))
 
+    def test_set_sysctls_logs_out(self):
+        """``set_sysctls`` exits the terminal once done"""
+        setup_onefs.set_sysctls(self.fake_console)
+
+        exit = self.fake_console.send_keys.call_args_list[-1][0][0]
+        command = 'exit'
+
+        self.assertEqual(exit, command)
 
 if __name__ == '__main__':
     unittest.main()
