@@ -847,5 +847,28 @@ class TestWizardRoutines(unittest.TestCase):
 
         self.assertEqual(exit, command)
 
+    def test_set_sysctls_compadmin(self):
+        """``set_sysctls`` logs in as compadmin in compliance mode"""
+        setup_onefs.set_sysctls(self.fake_console, compliance_mode=True)
+
+        user = self.fake_console.send_keys.call_args_list[:1]
+        user = user[0][0][0] # pull the 1st positional arg
+        expected = 'compadmin'
+
+        self.assertEqual(user, expected)
+
+    def test_set_sysctls_sudo(self):
+        """``set_sysctls`` uses 'sudo' to set the systctls"""
+        setup_onefs.set_sysctls(self.fake_console, compliance_mode=True)
+
+        sysctls = self.fake_console.send_keys.call_args_list[2:] # chop off the login
+        sysctls.pop() # chop off the exit
+        sysctls = [x[0][0] for x in sysctls]
+        expected = ['sudo isi_sysctl_cluster kern.cam.da.default_timeout=180',
+                    'sudo isi_sysctl_cluster debug.debugger_on_panic=0']
+        # sorted() to avoid false positive due to ordering
+        self.assertEqual(sorted(sysctls), sorted(expected))
+
+
 if __name__ == '__main__':
     unittest.main()
