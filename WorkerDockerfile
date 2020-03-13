@@ -13,7 +13,7 @@ RUN apt-get install --yes wget python3 python3-dev openssl gcc \
              libuuid1>=2.16 libx11-6>=2:1.4.99.1 libx11-xcb1 libxcb1>=1.6 \
              libxcomposite1>=1:0.3-1 libxcursor1>>1.1.2 libxdamage1>=1:1.1 \
              libxext6 libxfixes3 libxi6>=2:1.2.99.4 libxrandr2>=2:1.2.99.3 \
-             libxrender1 libxss1 libxtst6 lsb-release xdg-utils>=1.0.2
+             libxrender1 libxss1 libxtst6 lsb-release xdg-utils>=1.0.2 g++
 
 RUN wget --no-check-certificate -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
     python3 /tmp/get-pip.py && \
