@@ -60,7 +60,7 @@ def delete_onefs(username, machine_name, logger):
             raise ValueError('No OneFS node named {} found'.format(machine_name))
 
 
-def create_onefs(username, machine_name, image, front_end, back_end, logger):
+def create_onefs(username, machine_name, image, front_end, back_end, ram, logger):
     """Deploy a OneFS node
 
     :Returns: Dictionary
@@ -79,6 +79,9 @@ def create_onefs(username, machine_name, image, front_end, back_end, logger):
 
     :param back_end: The network to hook the internal network to
     :type back_end: String
+
+    :param ram: The number of GB of memory to provision the node with
+    :type ram: Integer
 
     :param logger: An object for logging messages
     :type logger: logging.LoggerAdapter
@@ -102,8 +105,9 @@ def create_onefs(username, machine_name, image, front_end, back_end, logger):
                                                      power_on=False)
         finally:
             ova.close()
-        # The OVA ships with ~2GB of RAM. The vOneFS docs recommend 6GB for heavy load.
-        virtual_machine.adjust_ram(the_vm, mb_of_ram=4096)
+        # ram is supplied in GB
+        mb_of_ram = ram * 1024
+        virtual_machine.adjust_ram(the_vm, mb_of_ram=mb_of_ram)
         virtual_machine.power(the_vm, state='on')
         meta_data = {'component': 'OneFS',
                      'created': time.time(),

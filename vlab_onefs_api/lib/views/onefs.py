@@ -44,6 +44,12 @@ class OneFSView(MachineView):
                         "backend": {
                             "description": "The back end (aka private) network to use",
                             "type": "string"
+                        },
+                        "ram": {
+                            "description": "How many GB of RAM to provision a node with",
+                            "type": "integer",
+                            "default": 4,
+                            "enum": [4, 6, 8, 10, 12]
                         }
                     },
                     "required": ["name", 'image', 'frontend', 'backend']
@@ -194,7 +200,8 @@ class OneFSView(MachineView):
         image = body['image']
         front_end = '{}_{}'.format(username, body['frontend'])
         back_end = '{}_{}'.format(username, body['backend'])
-        task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end, txn_id])
+        ram = body.get('ram', 4)
+        task = current_app.celery_app.send_task('onefs.create', [username, machine_name, image, front_end, back_end, ram, txn_id])
         resp_data['content'] = {'task-id': task.id}
         resp = Response(ujson.dumps(resp_data))
         resp.status_code = 202
