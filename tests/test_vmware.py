@@ -78,6 +78,7 @@ class TestVMware(unittest.TestCase):
                                      image='8.0.0.4',
                                      front_end='externalNetwork',
                                      back_end='internalNetwork',
+                                     ram=4,
                                      logger=fake_logger)
         expected = {'isi01': {'worked': True}}
 
@@ -101,6 +102,7 @@ class TestVMware(unittest.TestCase):
                                     image='8.0.0.4',
                                     front_end='not a thing',
                                     back_end='internalNetwork',
+                                    ram=4,
                                     logger=fake_logger)
 
     @patch.object(vmware, 'consume_task')
@@ -121,6 +123,7 @@ class TestVMware(unittest.TestCase):
                                     image='8.0.0.4',
                                     front_end='externallNetwork',
                                     back_end='not a thing',
+                                    ram=4,
                                     logger=fake_logger)
 
     @patch.object(vmware, 'consume_task')
@@ -141,6 +144,7 @@ class TestVMware(unittest.TestCase):
                                 image='4.0.0.0',
                                 front_end='externallNetwork',
                                 back_end='internalNetwork',
+                                ram=4,
                                 logger=fake_logger)
 
     @patch.object(vmware.virtual_machine, 'get_info')
@@ -202,6 +206,7 @@ class TestVMware(unittest.TestCase):
                             image='8.0.0.4',
                             front_end='externalNetwork',
                             back_end='internalNetwork',
+                            ram=4,
                             logger=fake_logger)
         _, call_kwargs = fake_deploy_from_ova.call_args
         called_power = call_kwargs['power_on']
@@ -230,6 +235,7 @@ class TestVMware(unittest.TestCase):
                             image='8.0.0.4',
                             front_end='externalNetwork',
                             back_end='internalNetwork',
+                            ram=4,
                             logger=fake_logger)
         _, call_kwargs = fake_power.call_args
         called_power = call_kwargs['state']
@@ -257,6 +263,7 @@ class TestVMware(unittest.TestCase):
                             image='8.0.0.4',
                             front_end='externalNetwork',
                             back_end='internalNetwork',
+                            ram=4,
                             logger=fake_logger)
         _, call_kwargs = fake_adjust_ram.call_args
         defined_ram = call_kwargs['mb_of_ram']

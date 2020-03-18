@@ -40,6 +40,7 @@ class TestTasks(unittest.TestCase):
                               image='8.0.04',
                               front_end='externalNetwork',
                               back_end='internalNetwork',
+                              ram=4,
                               txn_id='myId')
         expected = {'content' : {'worked': True}, 'error': None, 'params': {}}
 
@@ -55,6 +56,7 @@ class TestTasks(unittest.TestCase):
                               image='8.0.04',
                               front_end='externalNetwork',
                               back_end='internalNetwork',
+                              ram=4,
                               txn_id='myId')
         expected = {'content' : {}, 'error': 'testing', 'params': {}}
 
