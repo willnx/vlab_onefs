@@ -38,7 +38,7 @@ def show(self, username, txn_id):
 
 
 @app.task(name='onefs.create', bind=True)
-def create(self, username, machine_name, image, front_end, back_end, ram, txn_id):
+def create(self, username, machine_name, image, front_end, back_end, ram, cpu_count, txn_id):
     """Deploy a new OneFS node
 
     :Returns: Dictionary
@@ -61,6 +61,9 @@ def create(self, username, machine_name, image, front_end, back_end, ram, txn_id
     :param ram: The number of GB of memory to provision the node with
     :type ram: Integer
 
+    :param cpu_count: The number of CPU cores to allocate to the vOneFS node
+    :type cpu_count: Integer
+
     :param txn_id: A unique string supplied by the client to track the call through logs
     :type txn_id: String
     """
@@ -68,7 +71,7 @@ def create(self, username, machine_name, image, front_end, back_end, ram, txn_id
     resp = {'content' : {}, 'error': None, 'params': {}}
     logger.info('Task starting')
     try:
-        resp['content'] = vmware.create_onefs(username, machine_name, image, front_end, back_end, ram, logger)
+        resp['content'] = vmware.create_onefs(username, machine_name, image, front_end, back_end, ram, cpu_count, logger)
     except ValueError as doh:
         logger.error('Task failed: {}'.format(doh))
         resp['error'] = '{}'.format(doh)

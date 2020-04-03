@@ -18,9 +18,9 @@ services:
       - /mnt/raid/images/onefs:/images:ro
       - /mnt/tmp:/home
     environment:
-      - INF_VCENTER_SERVER=changeMe
-      - INF_VCENTER_USER=changeMe
-      - INF_VCENTER_PASSWORD=changeMe
+      - INF_VCENTER_SERVER=vlab-vcenter.emc.com
+      - INF_VCENTER_USER=willhn@vlab.local
+      - INF_VCENTER_PASSWORD=li84fe25
       - INF_VCENTER_DATASTORE=generalStorage,generalStorage2,generalStorage3
       - INF_VCENTER_TOP_LVL_DIR=/vlab/users
       - INF_VCENTER_RESORUCE_POOL=generalCompute
