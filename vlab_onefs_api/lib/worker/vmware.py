@@ -60,7 +60,7 @@ def delete_onefs(username, machine_name, logger):
             raise ValueError('No OneFS node named {} found'.format(machine_name))
 
 
-def create_onefs(username, machine_name, image, front_end, back_end, ram, logger):
+def create_onefs(username, machine_name, image, front_end, back_end, ram, cpu_count, logger):
     """Deploy a OneFS node
 
     :Returns: Dictionary
@@ -82,6 +82,9 @@ def create_onefs(username, machine_name, image, front_end, back_end, ram, logger
 
     :param ram: The number of GB of memory to provision the node with
     :type ram: Integer
+
+    :param cpu_count: The number of CPU cores to allocate to the vOneFS node
+    :type cpu_count: Integer
 
     :param logger: An object for logging messages
     :type logger: logging.LoggerAdapter
@@ -108,6 +111,7 @@ def create_onefs(username, machine_name, image, front_end, back_end, ram, logger
         # ram is supplied in GB
         mb_of_ram = ram * 1024
         virtual_machine.adjust_ram(the_vm, mb_of_ram=mb_of_ram)
+        virtual_machine.adjust_cpu(the_vm, cpu_count)
         virtual_machine.power(the_vm, state='on')
         meta_data = {'component': 'OneFS',
                      'created': time.time(),
