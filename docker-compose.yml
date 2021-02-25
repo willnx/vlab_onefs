@@ -6,14 +6,14 @@ services:
     image:
       willnx/vlab-onefs-api
     volumes:
-      - ./vlab_onefs_api:/usr/lib/python3.6/site-packages/vlab_onefs_api
+      - ./vlab_onefs_api:/usr/lib/python3.8/site-packages/vlab_onefs_api
     command: ["python3", "app.py"]
 
   onefs-worker:
     image:
       willnx/vlab-onefs-worker
     volumes:
-      - ./vlab_onefs_api:/usr/local/lib/python3.6/dist-packages/vlab_onefs_api/
+      - ./vlab_onefs_api:/usr/local/lib/python3.8/dist-packages/vlab_onefs_api/
       - /home/willhn/code/vlab/vlab_inf_common/vlab_inf_common:/usr/local/lib/python3.6/dist-packages/vlab_inf_common
       - /mnt/raid/images/onefs:/images:ro
       - /mnt/tmp:/home
